@@ -5,7 +5,6 @@ import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameD
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { BarberReviews } from './BarberReviews';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 interface Service {
   id: string;
@@ -160,21 +159,9 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
         </div>
       </div>
 
+      <h2 className="text-lg font-bold px-4 pb-3">Reviews ({barber.review_count})</h2>
       <div className="px-4 pb-6">
-        <Tabs defaultValue="photos" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="photos">Haircut Photos</TabsTrigger>
-            <TabsTrigger value="reviews">Reviews ({barber.review_count})</TabsTrigger>
-          </TabsList>
-          <TabsContent value="photos" className="mt-4">
-            <div className="text-center py-8 text-muted-foreground">
-              Photo gallery coming soon
-            </div>
-          </TabsContent>
-          <TabsContent value="reviews" className="mt-4">
-            <BarberReviews barberId={barber.id} />
-          </TabsContent>
-        </Tabs>
+        <BarberReviews barberId={barber.id} />
       </div>
 
       <h2 className="text-lg font-bold px-4 pb-3">Select Service</h2>
