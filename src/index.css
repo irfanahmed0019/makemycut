@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* MakeMyCut brand colors */
+    --maroon: 0 61% 38%;
+    --beige: 30 11% 82%;
+    --cream: 48 100% 99%;
+    --dark-bg: 30 5% 3%;
+    --card-bg: 30 3% 10%;
+    
+    --background: var(--dark-bg);
+    --foreground: var(--beige);
+
+    --card: var(--card-bg);
+    --card-foreground: var(--cream);
+
+    --popover: var(--card-bg);
+    --popover-foreground: var(--beige);
+
+    --primary: var(--maroon);
+    --primary-foreground: var(--cream);
+
+    --secondary: var(--card-bg);
+    --secondary-foreground: var(--beige);
+
+    --muted: 30 3% 15%;
+    --muted-foreground: 30 5% 60%;
+
+    --accent: var(--maroon);
+    --accent-foreground: var(--cream);
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: var(--cream);
+
+    --border: 30 3% 20%;
+    --input: 30 3% 20%;
+    --ring: var(--maroon);
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: var(--dark-bg);
+    --foreground: var(--beige);
+
+    --card: var(--card-bg);
+    --card-foreground: var(--cream);
+
+    --popover: var(--card-bg);
+    --popover-foreground: var(--beige);
+
+    --primary: var(--maroon);
+    --primary-foreground: var(--cream);
+
+    --secondary: var(--card-bg);
+    --secondary-foreground: var(--beige);
+
+    --muted: 30 3% 15%;
+    --muted-foreground: 30 5% 60%;
+
+    --accent: var(--maroon);
+    --accent-foreground: var(--cream);
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: var(--cream);
+
+    --border: 30 3% 20%;
+    --input: 30 3% 20%;
+    --ring: var(--maroon);
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Manrope', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+  }
+}
