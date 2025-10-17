@@ -4,6 +4,8 @@ import { Button } from './ui/button';
 import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { BarberReviews } from './BarberReviews';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 interface Service {
   id: string;
@@ -19,7 +21,12 @@ interface ConfirmBookingProps {
   onConfirm: (booking: any) => void;
 }
 
-const timeSlots = ['10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM'];
+const timeSlots = [
+  '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', 
+  '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM',
+  '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM',
+  '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM'
+];
 
 export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProps) => {
   const { toast } = useToast();
@@ -141,6 +148,8 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
               <span>{barber.rating}</span>
               <span>|</span>
               <span>{barber.review_count} reviews</span>
+              <span>|</span>
+              <span>{barber.distance_km} km</span>
             </div>
           </div>
           <img
@@ -149,6 +158,23 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
             alt={barber.name}
           />
         </div>
+      </div>
+
+      <div className="px-4 pb-6">
+        <Tabs defaultValue="photos" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="photos">Haircut Photos</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews ({barber.review_count})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="photos" className="mt-4">
+            <div className="text-center py-8 text-muted-foreground">
+              Photo gallery coming soon
+            </div>
+          </TabsContent>
+          <TabsContent value="reviews" className="mt-4">
+            <BarberReviews barberId={barber.id} />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <h2 className="text-lg font-bold px-4 pb-3">Select Service</h2>
@@ -214,7 +240,9 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
         </div>
       </div>
 
-      <h2 className="text-lg font-bold px-4 pb-3 pt-6">Select Time</h2>
+      <h2 className="text-lg font-bold px-4 pb-3 pt-6">
+        Select Time <span className="text-sm font-normal text-muted-foreground">(15 min buffer)</span>
+      </h2>
       <div className="grid grid-cols-2 gap-3 px-4">
         {timeSlots.map((time) => (
           <Button
