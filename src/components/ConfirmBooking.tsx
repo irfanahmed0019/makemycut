@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from './ui/button';
 import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { BarberReviews } from './BarberReviews';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 interface Service {
   id: string;
@@ -29,6 +28,7 @@ const timeSlots = [
 ];
 
 export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProps) => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
@@ -161,20 +161,14 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
       </div>
 
       <div className="px-4 pb-6">
-        <Tabs defaultValue="photos" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="photos">Haircut Photos</TabsTrigger>
-            <TabsTrigger value="reviews">Reviews ({barber.review_count})</TabsTrigger>
-          </TabsList>
-          <TabsContent value="photos" className="mt-4">
-            <div className="text-center py-8 text-muted-foreground">
-              Photo gallery coming soon
-            </div>
-          </TabsContent>
-          <TabsContent value="reviews" className="mt-4">
-            <BarberReviews barberId={barber.id} />
-          </TabsContent>
-        </Tabs>
+        <Button
+          variant="outline"
+          className="w-full flex items-center justify-center gap-2"
+          onClick={() => navigate('/reviews', { state: { barber } })}
+        >
+          <span className="material-symbols-outlined">rate_review</span>
+          <span>View All Reviews ({barber.review_count})</span>
+        </Button>
       </div>
 
       <h2 className="text-lg font-bold px-4 pb-3">Select Service</h2>
