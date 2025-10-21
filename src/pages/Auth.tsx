@@ -54,11 +54,11 @@ export default function Auth() {
       <div className="w-full max-w-md">
         <div className="bg-card rounded-2xl p-8 shadow-lg">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              BookMyCut
+            <h1 className="text-5xl font-bold mb-2 text-card-foreground" style={{ fontFamily: 'serif' }}>
+              Make My Cut
             </h1>
-            <p className="text-muted-foreground">
-              Book your next haircut appointment
+            <p className="text-lg text-muted-foreground" style={{ fontFamily: 'serif' }}>
+              Your Style. Your Time.
             </p>
           </div>
 
