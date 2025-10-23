@@ -6,6 +6,36 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
 import { Separator } from '@/components/ui/separator';
+import { z } from 'zod';
+import { useToast } from '@/hooks/use-toast';
+
+const signUpSchema = z.object({
+  fullName: z.string()
+    .trim()
+    .min(2, 'Name must be at least 2 characters')
+    .max(100, 'Name must be less than 100 characters')
+    .regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
+  phone: z.string()
+    .trim()
+    .regex(/^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/, 'Invalid phone number format'),
+  email: z.string()
+    .trim()
+    .email('Invalid email address')
+    .max(255, 'Email must be less than 255 characters'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(72, 'Password must be less than 72 characters')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+});
+
+const signInSchema = z.object({
+  email: z.string()
+    .trim()
+    .email('Invalid email address')
+    .max(255, 'Email must be less than 255 characters'),
+  password: z.string()
+    .min(1, 'Password is required'),
+});
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,8 +43,10 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { signIn, signUp, signInWithGoogle, user, loading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user && !loading) {
@@ -24,16 +56,52 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
     
-    if (isLogin) {
-      const { error } = await signIn(email, password);
-      if (!error) {
-        navigate('/');
+    try {
+      if (isLogin) {
+        // Validate login inputs
+        const validatedData = signInSchema.parse({ email, password });
+        
+        const { error } = await signIn(validatedData.email, validatedData.password);
+        if (!error) {
+          navigate('/');
+        }
+      } else {
+        // Validate signup inputs
+        const validatedData = signUpSchema.parse({ fullName, phone, email, password });
+        
+        const { error } = await signUp(
+          validatedData.email, 
+          validatedData.password, 
+          validatedData.fullName, 
+          validatedData.phone
+        );
+        if (!error) {
+          toast({
+            title: 'Account created successfully!',
+            description: 'You can now sign in with your credentials.',
+          });
+          setIsLogin(true);
+        }
       }
-    } else {
-      const { error } = await signUp(email, password, fullName, phone);
-      if (!error) {
-        setIsLogin(true);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+        
+        // Show the first error in a toast
+        const firstError = error.errors[0];
+        toast({
+          variant: 'destructive',
+          title: 'Validation Error',
+          description: firstError.message,
+        });
       }
     }
   };
@@ -110,10 +178,19 @@ export default function Auth() {
                   id="fullName"
                   type="text"
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  onChange={(e) => {
+                    setFullName(e.target.value);
+                    if (errors.fullName) {
+                      setErrors(prev => ({ ...prev, fullName: '' }));
+                    }
+                  }}
                   required
                   placeholder="John Doe"
+                  className={errors.fullName ? 'border-destructive' : ''}
                 />
+                {errors.fullName && (
+                  <p className="text-xs text-destructive mt-1">{errors.fullName}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="phone">Phone Number</Label>
@@ -121,10 +198,19 @@ export default function Auth() {
                   id="phone"
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    if (errors.phone) {
+                      setErrors(prev => ({ ...prev, phone: '' }));
+                    }
+                  }}
                   required
                   placeholder="+1 (555) 000-0000"
+                  className={errors.phone ? 'border-destructive' : ''}
                 />
+                {errors.phone && (
+                  <p className="text-xs text-destructive mt-1">{errors.phone}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="email">Email</Label>
@@ -132,10 +218,19 @@ export default function Auth() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) {
+                      setErrors(prev => ({ ...prev, email: '' }));
+                    }
+                  }}
                   required
                   placeholder="you@example.com"
+                  className={errors.email ? 'border-destructive' : ''}
                 />
+                {errors.email && (
+                  <p className="text-xs text-destructive mt-1">{errors.email}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="password">Password</Label>
@@ -143,11 +238,24 @@ export default function Auth() {
                   id="password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password) {
+                      setErrors(prev => ({ ...prev, password: '' }));
+                    }
+                  }}
                   required
                   placeholder="••••••••"
-                  minLength={6}
+                  className={errors.password ? 'border-destructive' : ''}
                 />
+                {errors.password && (
+                  <p className="text-xs text-destructive mt-1">{errors.password}</p>
+                )}
+                {!isLogin && !errors.password && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Min 8 characters with uppercase, lowercase, and number
+                  </p>
+                )}
               </div>
               <Button type="submit" className="w-full">
                 Sign Up
@@ -163,10 +271,19 @@ export default function Auth() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) {
+                      setErrors(prev => ({ ...prev, email: '' }));
+                    }
+                  }}
                   required
                   placeholder="you@example.com"
+                  className={errors.email ? 'border-destructive' : ''}
                 />
+                {errors.email && (
+                  <p className="text-xs text-destructive mt-1">{errors.email}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="password">Password</Label>
@@ -174,11 +291,19 @@ export default function Auth() {
                   id="password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password) {
+                      setErrors(prev => ({ ...prev, password: '' }));
+                    }
+                  }}
                   required
                   placeholder="••••••••"
-                  minLength={6}
+                  className={errors.password ? 'border-destructive' : ''}
                 />
+                {errors.password && (
+                  <p className="text-xs text-destructive mt-1">{errors.password}</p>
+                )}
               </div>
               <Button type="submit" className="w-full">
                 Sign In

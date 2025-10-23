@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from './ui/button';
-import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
+import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isBefore, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -71,6 +71,18 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
         variant: 'destructive',
         title: 'Missing Information',
         description: 'Please select a service',
+      });
+      return;
+    }
+
+    // Validate that the selected date is not in the past
+    const today = startOfDay(new Date());
+    const selectedDateStart = startOfDay(selectedDate);
+    if (isBefore(selectedDateStart, today)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Date',
+        description: 'Cannot book appointments in the past. Please select today or a future date.',
       });
       return;
     }
@@ -219,17 +231,24 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
                 {day}
               </p>
             ))}
-            {daysInMonth.map((day) => (
-              <Button
-                key={day.toISOString()}
-                variant={isSameDay(day, selectedDate) ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedDate(day)}
-                className="h-10 rounded-full"
-              >
-                {format(day, 'd')}
-              </Button>
-            ))}
+            {daysInMonth.map((day) => {
+              const today = startOfDay(new Date());
+              const dayStart = startOfDay(day);
+              const isPast = isBefore(dayStart, today);
+              
+              return (
+                <Button
+                  key={day.toISOString()}
+                  variant={isSameDay(day, selectedDate) ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedDate(day)}
+                  disabled={isPast}
+                  className="h-10 rounded-full"
+                >
+                  {format(day, 'd')}
+                </Button>
+              );
+            })}
           </div>
         </div>
       </div>
