@@ -77,13 +77,7 @@ export default function Auth() {
           validatedData.fullName, 
           validatedData.phone
         );
-        if (!error) {
-          toast({
-            title: 'Account created successfully!',
-            description: 'You can now sign in with your credentials.',
-          });
-          setIsLogin(true);
-        }
+        // Don't manually redirect - let the useEffect handle it when user state updates
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
