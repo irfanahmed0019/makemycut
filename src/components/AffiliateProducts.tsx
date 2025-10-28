@@ -1,123 +1,228 @@
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Star, ShoppingCart, Heart } from 'lucide-react';
 
 interface Product {
   id: string;
   name: string;
   description: string;
   price: string;
+  originalPrice: string;
+  discount: string;
   imageUrl: string;
   affiliateLink: string;
   category: string;
+  rating: number;
+  reviews: number;
 }
 
 const products: Product[] = [
   {
     id: '1',
     name: 'Hair Growth Serum',
-    description: 'Advanced formula with biotin and keratin for stronger, healthier hair',
+    description: 'Advanced formula with biotin and keratin',
     price: '$29.99',
+    originalPrice: '$49.99',
+    discount: '40% OFF',
     imageUrl: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=400',
     affiliateLink: '#',
-    category: 'Serum'
+    category: 'Serum',
+    rating: 4.5,
+    reviews: 248
   },
   {
     id: '2',
     name: 'Anti-Hairfall Shampoo',
-    description: 'Reduces hair fall by 90% with natural ingredients',
+    description: 'Reduces hair fall by 90%',
     price: '$19.99',
+    originalPrice: '$29.99',
+    discount: '33% OFF',
     imageUrl: 'https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?w=400',
     affiliateLink: '#',
-    category: 'Shampoo'
+    category: 'Shampoo',
+    rating: 4.8,
+    reviews: 532
   },
   {
     id: '3',
     name: 'Vitamin Hair Supplement',
-    description: 'Essential vitamins and minerals for hair health',
+    description: 'Essential vitamins for hair health',
     price: '$34.99',
+    originalPrice: '$54.99',
+    discount: '36% OFF',
     imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400',
     affiliateLink: '#',
-    category: 'Supplement'
+    category: 'Supplement',
+    rating: 4.6,
+    reviews: 189
   },
   {
     id: '4',
     name: 'Hair Nourishing Oil',
-    description: 'Natural oils blend for deep nourishment and shine',
+    description: 'Natural oils for deep nourishment',
     price: '$24.99',
+    originalPrice: '$39.99',
+    discount: '38% OFF',
     imageUrl: 'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=400',
     affiliateLink: '#',
-    category: 'Oil'
+    category: 'Oil',
+    rating: 4.7,
+    reviews: 421
   },
   {
     id: '5',
     name: 'Scalp Treatment Mask',
-    description: 'Weekly treatment for healthy scalp and hair growth',
+    description: 'Weekly treatment for healthy scalp',
     price: '$39.99',
+    originalPrice: '$59.99',
+    discount: '33% OFF',
     imageUrl: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400',
     affiliateLink: '#',
-    category: 'Treatment'
+    category: 'Treatment',
+    rating: 4.4,
+    reviews: 156
   },
   {
     id: '6',
     name: 'Hair Repair Conditioner',
-    description: 'Deep conditioning formula for damaged hair',
+    description: 'Deep conditioning for damaged hair',
     price: '$22.99',
+    originalPrice: '$34.99',
+    discount: '34% OFF',
     imageUrl: 'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=400',
     affiliateLink: '#',
-    category: 'Conditioner'
+    category: 'Conditioner',
+    rating: 4.5,
+    reviews: 312
   }
 ];
 
+const categories = ['All', 'Serum', 'Shampoo', 'Oil', 'Treatment', 'Supplement', 'Conditioner'];
+
 export const AffiliateProducts = () => {
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [wishlist, setWishlist] = useState<Set<string>>(new Set());
+
+  const filteredProducts = selectedCategory === 'All' 
+    ? products 
+    : products.filter(p => p.category === selectedCategory);
+
+  const toggleWishlist = (id: string) => {
+    const newWishlist = new Set(wishlist);
+    if (newWishlist.has(id)) {
+      newWishlist.delete(id);
+    } else {
+      newWishlist.add(id);
+    }
+    setWishlist(newWishlist);
+  };
+
   return (
     <section className="pt-4 pb-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold mb-2">Hair Care Shop</h2>
+      <div className="text-center mb-4">
+        <h2 className="text-2xl font-bold mb-1">Hair Care Shop</h2>
         <p className="text-sm text-muted-foreground">
           Premium products for healthy, beautiful hair
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        {products.map((product) => (
-          <Card key={product.id} className="overflow-hidden">
+      {/* Category Filter */}
+      <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+        {categories.map((category) => (
+          <Badge
+            key={category}
+            variant={selectedCategory === category ? "default" : "outline"}
+            className="cursor-pointer whitespace-nowrap transition-all hover:scale-105"
+            onClick={() => setSelectedCategory(category)}
+          >
+            {category}
+          </Badge>
+        ))}
+      </div>
+
+      {/* Product Grid */}
+      <div className="grid grid-cols-2 gap-3 animate-fade-in">
+        {filteredProducts.map((product) => (
+          <Card 
+            key={product.id} 
+            className="group overflow-hidden border-border hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+          >
             <CardContent className="p-0">
-              <div className="flex gap-4 p-4">
+              {/* Image Container */}
+              <div className="relative overflow-hidden">
                 <img
                   src={product.imageUrl}
                   alt={product.name}
-                  className="w-24 h-24 object-cover rounded-lg"
+                  className="w-full h-40 object-cover transition-transform duration-300 group-hover:scale-110"
                 />
-                <div className="flex-1 space-y-2">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-base">{product.name}</h3>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                        {product.category}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {product.description}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-primary">
-                      {product.price}
-                    </span>
-                    <Button
-                      size="sm"
-                      onClick={() => window.open(product.affiliateLink, '_blank')}
-                      className="bg-primary text-primary-foreground"
-                    >
-                      Buy Now
-                    </Button>
-                  </div>
+                <div className="absolute top-2 left-2">
+                  <Badge className="bg-primary text-primary-foreground text-xs">
+                    {product.discount}
+                  </Badge>
                 </div>
+                <button
+                  onClick={() => toggleWishlist(product.id)}
+                  className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-full p-1.5 transition-all hover:scale-110"
+                >
+                  <Heart 
+                    className={`w-4 h-4 ${wishlist.has(product.id) ? 'fill-red-500 text-red-500' : 'text-foreground'}`}
+                  />
+                </button>
+              </div>
+
+              {/* Product Details */}
+              <div className="p-3 space-y-2">
+                <div>
+                  <h3 className="font-semibold text-sm line-clamp-2 mb-1 group-hover:text-primary transition-colors">
+                    {product.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground line-clamp-1">
+                    {product.description}
+                  </p>
+                </div>
+
+                {/* Rating */}
+                <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-primary/10 rounded">
+                    <span className="text-xs font-semibold">{product.rating}</span>
+                    <Star className="w-3 h-3 fill-primary text-primary" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">({product.reviews})</span>
+                </div>
+
+                {/* Price */}
+                <div className="flex items-baseline gap-2">
+                  <span className="text-lg font-bold text-foreground">{product.price}</span>
+                  <span className="text-xs text-muted-foreground line-through">{product.originalPrice}</span>
+                </div>
+
+                {/* Add to Cart Button */}
+                <Button
+                  size="sm"
+                  onClick={() => window.open(product.affiliateLink, '_blank')}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all group-hover:shadow-md"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-1" />
+                  Buy Now
+                </Button>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Hide scrollbar */}
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </section>
   );
 };
