@@ -6,6 +6,7 @@ import { TrustedPicks } from '@/components/TrustedPicks';
 import { Profile } from '@/components/Profile';
 import { ConfirmBooking } from '@/components/ConfirmBooking';
 import { BookingQRCode } from '@/components/BookingQRCode';
+import { ChatBot } from '@/components/ChatBot';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState<string>('home');
@@ -75,6 +76,7 @@ const Index = () => {
         {activeSection === 'bookings' && <Bookings />}
         {activeSection === 'home' && <TrustedPicks onBookNow={handleBookNow} />}
         {activeSection === 'profile' && <Profile />}
+        {activeSection === 'chat' && <ChatBot />}
         {activeSection === 'confirm-booking' && selectedBarber && (
           <ConfirmBooking barber={selectedBarber} onBack={handleBack} onConfirm={handleConfirm} />
         )}
@@ -105,6 +107,15 @@ const Index = () => {
           >
             <span className="material-symbols-outlined">calendar_month</span>
             <span className="text-xs">Bookings</span>
+          </button>
+          <button
+            onClick={() => setActiveSection('chat')}
+            className={`flex flex-col items-center gap-1 ${
+              activeSection === 'chat' ? 'text-foreground' : 'text-muted-foreground'
+            }`}
+          >
+            <span className="material-symbols-outlined">chat</span>
+            <span className="text-xs">Chat</span>
           </button>
           <button
             onClick={() => setActiveSection('profile')}
