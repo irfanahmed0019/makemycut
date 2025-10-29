@@ -26,7 +26,7 @@ const products: Product[] = [
     price: '$29.99',
     originalPrice: '$49.99',
     discount: '40% OFF',
-    imageUrl: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=400',
+    imageUrl: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=500&q=80',
     affiliateLink: '#',
     category: 'Serum',
     rating: 4.5,
@@ -39,7 +39,7 @@ const products: Product[] = [
     price: '$19.99',
     originalPrice: '$29.99',
     discount: '33% OFF',
-    imageUrl: 'https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?w=400',
+    imageUrl: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=500&q=80',
     affiliateLink: '#',
     category: 'Shampoo',
     rating: 4.8,
@@ -52,7 +52,7 @@ const products: Product[] = [
     price: '$34.99',
     originalPrice: '$54.99',
     discount: '36% OFF',
-    imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400',
+    imageUrl: 'https://images.unsplash.com/photo-1550572017-4367-5137-91c4-9e9f5a8d2d04?w=500&q=80',
     affiliateLink: '#',
     category: 'Supplement',
     rating: 4.6,
@@ -65,7 +65,7 @@ const products: Product[] = [
     price: '$24.99',
     originalPrice: '$39.99',
     discount: '38% OFF',
-    imageUrl: 'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=400',
+    imageUrl: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=500&q=80',
     affiliateLink: '#',
     category: 'Oil',
     rating: 4.7,
@@ -78,7 +78,7 @@ const products: Product[] = [
     price: '$39.99',
     originalPrice: '$59.99',
     discount: '33% OFF',
-    imageUrl: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400',
+    imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=500&q=80',
     affiliateLink: '#',
     category: 'Treatment',
     rating: 4.4,
@@ -91,7 +91,7 @@ const products: Product[] = [
     price: '$22.99',
     originalPrice: '$34.99',
     discount: '34% OFF',
-    imageUrl: 'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=400',
+    imageUrl: 'https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?w=500&q=80',
     affiliateLink: '#',
     category: 'Conditioner',
     rating: 4.5,
@@ -129,12 +129,12 @@ export const AffiliateProducts = () => {
       </div>
 
       {/* Category Filter */}
-      <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+      <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide px-1">
         {categories.map((category) => (
           <Badge
             key={category}
             variant={selectedCategory === category ? "default" : "outline"}
-            className="cursor-pointer whitespace-nowrap transition-all hover:scale-105"
+            className="cursor-pointer whitespace-nowrap transition-all hover:scale-105 text-xs px-3 py-1"
             onClick={() => setSelectedCategory(category)}
           >
             {category}
@@ -143,7 +143,7 @@ export const AffiliateProducts = () => {
       </div>
 
       {/* Product Grid */}
-      <div className="grid grid-cols-2 gap-3 animate-fade-in">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 animate-fade-in">
         {filteredProducts.map((product) => (
           <Card 
             key={product.id} 
@@ -151,34 +151,35 @@ export const AffiliateProducts = () => {
           >
             <CardContent className="p-0">
               {/* Image Container */}
-              <div className="relative overflow-hidden">
+              <div className="relative overflow-hidden aspect-square">
                 <img
                   src={product.imageUrl}
                   alt={product.name}
-                  className="w-full h-40 object-cover transition-transform duration-300 group-hover:scale-110"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
                 <div className="absolute top-2 left-2">
-                  <Badge className="bg-primary text-primary-foreground text-xs">
+                  <Badge className="bg-primary text-primary-foreground text-[10px] sm:text-xs px-2 py-0.5">
                     {product.discount}
                   </Badge>
                 </div>
                 <button
                   onClick={() => toggleWishlist(product.id)}
-                  className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-full p-1.5 transition-all hover:scale-110"
+                  className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-full p-1.5 transition-all hover:scale-110 active:scale-95"
+                  aria-label="Add to wishlist"
                 >
                   <Heart 
-                    className={`w-4 h-4 ${wishlist.has(product.id) ? 'fill-red-500 text-red-500' : 'text-foreground'}`}
+                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${wishlist.has(product.id) ? 'fill-red-500 text-red-500' : 'text-foreground'}`}
                   />
                 </button>
               </div>
 
               {/* Product Details */}
-              <div className="p-3 space-y-2">
+              <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
                 <div>
-                  <h3 className="font-semibold text-sm line-clamp-2 mb-1 group-hover:text-primary transition-colors">
+                  <h3 className="font-semibold text-xs sm:text-sm line-clamp-2 mb-0.5 sm:mb-1 group-hover:text-primary transition-colors">
                     {product.name}
                   </h3>
-                  <p className="text-xs text-muted-foreground line-clamp-1">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1">
                     {product.description}
                   </p>
                 </div>
@@ -186,25 +187,25 @@ export const AffiliateProducts = () => {
                 {/* Rating */}
                 <div className="flex items-center gap-1">
                   <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-primary/10 rounded">
-                    <span className="text-xs font-semibold">{product.rating}</span>
-                    <Star className="w-3 h-3 fill-primary text-primary" />
+                    <span className="text-[10px] sm:text-xs font-semibold">{product.rating}</span>
+                    <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-primary text-primary" />
                   </div>
-                  <span className="text-xs text-muted-foreground">({product.reviews})</span>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground">({product.reviews})</span>
                 </div>
 
                 {/* Price */}
-                <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-bold text-foreground">{product.price}</span>
-                  <span className="text-xs text-muted-foreground line-through">{product.originalPrice}</span>
+                <div className="flex items-baseline gap-1.5 sm:gap-2">
+                  <span className="text-base sm:text-lg font-bold text-foreground">{product.price}</span>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground line-through">{product.originalPrice}</span>
                 </div>
 
                 {/* Add to Cart Button */}
                 <Button
                   size="sm"
                   onClick={() => window.open(product.affiliateLink, '_blank')}
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all group-hover:shadow-md"
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all group-hover:shadow-md text-xs sm:text-sm py-1.5 sm:py-2 active:scale-95"
                 >
-                  <ShoppingCart className="w-4 h-4 mr-1" />
+                  <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                   Buy Now
                 </Button>
               </div>
