@@ -8,6 +8,7 @@ import { ConfirmBooking } from '@/components/ConfirmBooking';
 import { BookingQRCode } from '@/components/BookingQRCode';
 import { ChatBot } from '@/components/ChatBot';
 import { AffiliateProducts } from '@/components/AffiliateProducts';
+import { LaunchCountdown } from '@/components/LaunchCountdown';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState<string>('home');
@@ -75,7 +76,12 @@ const Index = () => {
       {/* Main Content */}
       <main className="flex-grow px-4 pb-20 overflow-y-auto">
         {activeSection === 'bookings' && <Bookings />}
-        {activeSection === 'home' && <TrustedPicks onBookNow={handleBookNow} />}
+        {activeSection === 'home' && (
+          <>
+            <TrustedPicks onBookNow={handleBookNow} />
+            <LaunchCountdown />
+          </>
+        )}
         {activeSection === 'shop' && <AffiliateProducts />}
         {activeSection === 'profile' && <Profile />}
         {activeSection === 'chat' && <ChatBot />}
