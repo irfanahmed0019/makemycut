@@ -23,6 +23,7 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
+          owner_id: string | null
           rating: number | null
           review_count: number | null
           updated_at: string | null
@@ -35,6 +36,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
+          owner_id?: string | null
           rating?: number | null
           review_count?: number | null
           updated_at?: string | null
@@ -47,6 +49,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
+          owner_id?: string | null
           rating?: number | null
           review_count?: number | null
           updated_at?: string | null
