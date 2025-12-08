@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const signUpSchema = z.object({
   fullName: z.string()
@@ -49,9 +49,23 @@ export default function Auth() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user && !loading) {
-      navigate('/', { replace: true });
-    }
+    const checkUserAndRedirect = async () => {
+      if (user && !loading) {
+        // Check if user is a salon owner
+        const { data: barber } = await supabase
+          .from('barbers')
+          .select('id')
+          .eq('owner_id', user.id)
+          .maybeSingle();
+        
+        if (barber) {
+          navigate('/salon-dashboard', { replace: true });
+        } else {
+          navigate('/', { replace: true });
+        }
+      }
+    };
+    checkUserAndRedirect();
   }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,9 +78,7 @@ export default function Auth() {
         const validatedData = signInSchema.parse({ email, password });
         
         const { error } = await signIn(validatedData.email, validatedData.password);
-        if (!error) {
-          navigate('/');
-        }
+        // Let useEffect handle the redirect based on user type
       } else {
         // Validate signup inputs
         const validatedData = signUpSchema.parse({ fullName, phone, email, password });
