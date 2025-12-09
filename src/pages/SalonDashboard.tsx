@@ -50,6 +50,49 @@ export default function SalonDashboard() {
     }
   }, [user, loading, navigate]);
 
+  const fetchBookings = async (barberId: string) => {
+    const { data: bookingsData, error: bookingsError } = await supabase
+      .from('bookings')
+      .select(`
+        id,
+        user_id,
+        booking_date,
+        booking_time,
+        status,
+        payment_status,
+        payment_method,
+        qr_code,
+        services:service_id(name, price)
+      `)
+      .eq('barber_id', barberId)
+      .order('booking_date', { ascending: true })
+      .order('booking_time', { ascending: true });
+
+    if (bookingsError) {
+      console.error('Error fetching bookings:', bookingsError);
+      return [];
+    }
+
+    // Fetch profiles for each booking
+    const bookingsWithProfiles = await Promise.all(
+      (bookingsData || []).map(async (booking) => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, phone')
+          .eq('id', booking.user_id)
+          .maybeSingle();
+        
+        return {
+          ...booking,
+          customer_name: profile?.full_name || 'Unknown',
+          customer_phone: profile?.phone || null,
+        };
+      })
+    );
+
+    return bookingsWithProfiles;
+  };
+
   useEffect(() => {
     const fetchBarberAndBookings = async () => {
       if (!user) return;
@@ -73,52 +116,47 @@ export default function SalonDashboard() {
 
       setBarber(barberData);
 
-      // Fetch all bookings for this barber
-      const { data: bookingsData, error: bookingsError } = await supabase
-        .from('bookings')
-        .select(`
-          id,
-          user_id,
-          booking_date,
-          booking_time,
-          status,
-          payment_status,
-          payment_method,
-          qr_code,
-          services:service_id(name, price)
-        `)
-        .eq('barber_id', barberData.id)
-        .order('booking_date', { ascending: true })
-        .order('booking_time', { ascending: true });
-
-      if (bookingsError) {
-        console.error('Error fetching bookings:', bookingsError);
-        return;
-      }
-
-      // Fetch profiles for each booking
-      const bookingsWithProfiles = await Promise.all(
-        (bookingsData || []).map(async (booking) => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, phone')
-            .eq('id', booking.user_id)
-            .maybeSingle();
-          
-          return {
-            ...booking,
-            customer_name: profile?.full_name || 'Unknown',
-            customer_phone: profile?.phone || null,
-          };
-        })
-      );
-
+      const bookingsWithProfiles = await fetchBookings(barberData.id);
       setAllBookings(bookingsWithProfiles);
       setIsLoading(false);
     };
 
     fetchBarberAndBookings();
   }, [user, navigate, toast]);
+
+  // Real-time subscription for new bookings
+  useEffect(() => {
+    if (!barber) return;
+
+    const channel = supabase
+      .channel('salon-bookings')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookings',
+          filter: `barber_id=eq.${barber.id}`,
+        },
+        async (payload) => {
+          // Refetch all bookings when there's a change
+          const updatedBookings = await fetchBookings(barber.id);
+          setAllBookings(updatedBookings);
+          
+          if (payload.eventType === 'INSERT') {
+            toast({
+              title: 'New Booking!',
+              description: 'A new appointment has been booked.',
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [barber, toast]);
 
   // Filter bookings by selected date
   useEffect(() => {
@@ -263,13 +301,11 @@ export default function SalonDashboard() {
               onSelect={(date) => date && setSelectedDate(date)}
               className={cn("rounded-md border pointer-events-auto")}
               modifiers={{
-                hasBooking: bookingDates,
+                hasBooking: (date) => 
+                  bookingDates.some(d => isSameDay(d, date)) && !isSameDay(date, selectedDate),
               }}
-              modifiersStyles={{
-                hasBooking: {
-                  fontWeight: 'bold',
-                  backgroundColor: 'hsl(var(--primary) / 0.1)',
-                },
+              modifiersClassNames={{
+                hasBooking: 'font-bold text-primary underline underline-offset-2',
               }}
             />
           </CardContent>
