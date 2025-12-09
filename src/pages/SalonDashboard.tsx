@@ -7,8 +7,10 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { QRScanner } from '@/components/salon/QRScanner';
+import { DashboardAnalytics } from '@/components/salon/DashboardAnalytics';
 import { cn } from '@/lib/utils';
 
 interface Booking {
@@ -278,7 +280,7 @@ export default function SalonDashboard() {
         </div>
       </header>
 
-      <main className="p-4 space-y-6">
+      <main className="p-4 space-y-4">
         {/* QR Scanner Button */}
         <Button
           onClick={() => setShowScanner(true)}
@@ -289,89 +291,103 @@ export default function SalonDashboard() {
           Scan Customer QR Code
         </Button>
 
-        {/* Calendar */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Select Date</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              className={cn("rounded-md border pointer-events-auto")}
-              modifiers={{
-                hasBooking: (date) => 
-                  bookingDates.some(d => isSameDay(d, date)) && !isSameDay(date, selectedDate),
-              }}
-              modifiersClassNames={{
-                hasBooking: 'font-bold text-primary underline underline-offset-2',
-              }}
-            />
-          </CardContent>
-        </Card>
+        {/* Tabs for Analytics and Appointments */}
+        <Tabs defaultValue="analytics" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="appointments">Appointments</TabsTrigger>
+          </TabsList>
 
-        {/* Appointments for Selected Date */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">
-              Appointments - {format(selectedDate, 'MMMM d, yyyy')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {bookings.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
-                No appointments for this date
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {bookings.map((booking) => (
-                  <div
-                    key={booking.id}
-                    className="border border-border rounded-lg p-4 space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-foreground">
-                        {booking.booking_time.slice(0, 5)}
-                      </span>
-                      <Badge className={getStatusColor(booking.status)}>
-                        {booking.status}
-                      </Badge>
-                    </div>
-                    <div className="text-sm space-y-1">
-                      <p className="text-foreground">
-                        <span className="text-muted-foreground">Customer:</span>{' '}
-                        {booking.customer_name}
-                      </p>
-                      {booking.customer_phone && (
-                        <p className="text-foreground">
-                          <span className="text-muted-foreground">Phone:</span>{' '}
-                          {booking.customer_phone}
-                        </p>
-                      )}
-                      <p className="text-foreground">
-                        <span className="text-muted-foreground">Service:</span>{' '}
-                        {booking.services?.name || 'Unknown'}
-                      </p>
-                      <p className="text-foreground">
-                        <span className="text-muted-foreground">Price:</span>{' '}
-                        ₹{booking.services?.price || 0}
-                      </p>
-                      <p className="text-foreground">
-                        <span className="text-muted-foreground">Payment:</span>{' '}
-                        {booking.payment_method === 'pay_now' ? 'Paid Online' : 'Pay at Salon'}
-                        {' - '}
-                        <span className={booking.payment_status === 'paid' ? 'text-green-500' : 'text-yellow-500'}>
-                          {booking.payment_status}
-                        </span>
-                      </p>
-                    </div>
+          <TabsContent value="analytics" className="mt-4">
+            <DashboardAnalytics bookings={allBookings} />
+          </TabsContent>
+
+          <TabsContent value="appointments" className="mt-4 space-y-4">
+            {/* Calendar */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Select Date</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  className={cn("rounded-md border pointer-events-auto")}
+                  modifiers={{
+                    hasBooking: (date) => 
+                      bookingDates.some(d => isSameDay(d, date)) && !isSameDay(date, selectedDate),
+                  }}
+                  modifiersClassNames={{
+                    hasBooking: 'font-bold text-primary underline underline-offset-2',
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Appointments for Selected Date */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  Appointments - {format(selectedDate, 'MMMM d, yyyy')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {bookings.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    No appointments for this date
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {bookings.map((booking) => (
+                      <div
+                        key={booking.id}
+                        className="border border-border rounded-lg p-4 space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-foreground">
+                            {booking.booking_time.slice(0, 5)}
+                          </span>
+                          <Badge className={getStatusColor(booking.status)}>
+                            {booking.status}
+                          </Badge>
+                        </div>
+                        <div className="text-sm space-y-1">
+                          <p className="text-foreground">
+                            <span className="text-muted-foreground">Customer:</span>{' '}
+                            {booking.customer_name}
+                          </p>
+                          {booking.customer_phone && (
+                            <p className="text-foreground">
+                              <span className="text-muted-foreground">Phone:</span>{' '}
+                              {booking.customer_phone}
+                            </p>
+                          )}
+                          <p className="text-foreground">
+                            <span className="text-muted-foreground">Service:</span>{' '}
+                            {booking.services?.name || 'Unknown'}
+                          </p>
+                          <p className="text-foreground">
+                            <span className="text-muted-foreground">Price:</span>{' '}
+                            ₹{booking.services?.price || 0}
+                          </p>
+                          <p className="text-foreground">
+                            <span className="text-muted-foreground">Payment:</span>{' '}
+                            {booking.payment_method === 'pay_now' ? 'Paid Online' : 'Pay at Salon'}
+                            {' - '}
+                            <span className={booking.payment_status === 'paid' ? 'text-green-500' : 'text-yellow-500'}>
+                              {booking.payment_status}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
