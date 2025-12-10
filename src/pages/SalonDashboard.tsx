@@ -314,12 +314,18 @@ export default function SalonDashboard() {
                   selected={selectedDate}
                   onSelect={(date) => date && setSelectedDate(date)}
                   className={cn("rounded-md border pointer-events-auto")}
-                  modifiers={{
-                    hasBooking: (date) => 
-                      bookingDates.some(d => isSameDay(d, date)) && !isSameDay(date, selectedDate),
-                  }}
-                  modifiersClassNames={{
-                    hasBooking: 'font-bold text-primary underline underline-offset-2',
+                  components={{
+                    DayContent: ({ date }) => {
+                      const hasBooking = bookingDates.some(d => isSameDay(d, date));
+                      return (
+                        <div className="relative w-full h-full flex items-center justify-center">
+                          {date.getDate()}
+                          {hasBooking && (
+                            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-green-500" />
+                          )}
+                        </div>
+                      );
+                    },
                   }}
                 />
               </CardContent>
