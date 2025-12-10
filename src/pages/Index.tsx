@@ -6,7 +6,6 @@ import { TrustedPicks } from '@/components/TrustedPicks';
 import { Profile } from '@/components/Profile';
 import { ConfirmBooking } from '@/components/ConfirmBooking';
 import { BookingQRCode } from '@/components/BookingQRCode';
-import { ChatBot } from '@/components/ChatBot';
 import { AffiliateProducts } from '@/components/AffiliateProducts';
 import { LaunchCountdown } from '@/components/LaunchCountdown';
 
@@ -84,7 +83,7 @@ const Index = () => {
         )}
         {activeSection === 'shop' && <AffiliateProducts />}
         {activeSection === 'profile' && <Profile />}
-        {activeSection === 'chat' && <ChatBot />}
+        
         {activeSection === 'confirm-booking' && selectedBarber && (
           <ConfirmBooking barber={selectedBarber} onBack={handleBack} onConfirm={handleConfirm} />
         )}
@@ -124,15 +123,6 @@ const Index = () => {
           >
             <span className="material-symbols-outlined">shopping_bag</span>
             <span className="text-xs">Shop</span>
-          </button>
-          <button
-            onClick={() => setActiveSection('chat')}
-            className={`flex flex-col items-center gap-1 ${
-              activeSection === 'chat' ? 'text-foreground' : 'text-muted-foreground'
-            }`}
-          >
-            <span className="material-symbols-outlined">chat</span>
-            <span className="text-xs">Chat</span>
           </button>
           <button
             onClick={() => setActiveSection('profile')}
