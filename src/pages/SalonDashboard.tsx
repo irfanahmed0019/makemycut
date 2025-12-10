@@ -229,6 +229,35 @@ export default function SalonDashboard() {
     navigate('/salon-login');
   };
 
+  const handleCancelBooking = async (bookingId: string) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'cancelled' })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      setAllBookings((prev) =>
+        prev.map((b) =>
+          b.id === bookingId ? { ...b, status: 'cancelled' } : b
+        )
+      );
+
+      toast({
+        title: 'Booking Cancelled',
+        description: 'The appointment has been cancelled.',
+      });
+    } catch (error) {
+      console.error('Cancel booking error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not cancel the booking.',
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'upcoming':
@@ -321,13 +350,24 @@ export default function SalonDashboard() {
                         <div className="relative w-full h-full flex items-center justify-center">
                           {date.getDate()}
                           {hasBooking && (
-                            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-green-500" />
+                            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-500" />
                           )}
                         </div>
                       );
                     },
                   }}
                 />
+                {/* Legend */}
+                <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    <span>Has bookings</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded bg-primary" />
+                    <span>Selected</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -386,6 +426,16 @@ export default function SalonDashboard() {
                             </span>
                           </p>
                         </div>
+                        {booking.status === 'upcoming' && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="w-full mt-2"
+                            onClick={() => handleCancelBooking(booking.id)}
+                          >
+                            Cancel Booking
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>
