@@ -3,8 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 type Message = { role: "user" | "assistant"; content: string };
+
+const MAX_MESSAGE_LENGTH = 2000;
 
 export const ChatBot = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -12,6 +17,7 @@ export const ChatBot = () => {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { user, session } = useAuth();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -20,19 +26,38 @@ export const ChatBot = () => {
   }, [messages]);
 
   const streamChat = async (userMessage: Message) => {
-    const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
-    
-    try {
-      const response = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ messages: [...messages, userMessage] }),
+    if (!session?.access_token) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to use the chat.",
+        variant: "destructive",
       });
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ messages: [...messages, userMessage] }),
+        }
+      );
 
       if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Session expired",
+            description: "Please sign in again.",
+            variant: "destructive",
+          });
+          return;
+        }
         if (response.status === 429) {
           toast({
             title: "Rate limit exceeded",
@@ -43,8 +68,17 @@ export const ChatBot = () => {
         }
         if (response.status === 402) {
           toast({
-            title: "Payment required",
-            description: "Please add credits to continue.",
+            title: "Service unavailable",
+            description: "Please try again later.",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (response.status === 400) {
+          const errorData = await response.json();
+          toast({
+            title: "Invalid request",
+            description: errorData.error || "Please check your message.",
             variant: "destructive",
           });
           return;
@@ -115,9 +149,29 @@ export const ChatBot = () => {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    const trimmedInput = input.trim();
+    if (!trimmedInput || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: input.trim() };
+    // Client-side validation
+    if (trimmedInput.length > MAX_MESSAGE_LENGTH) {
+      toast({
+        title: "Message too long",
+        description: `Maximum ${MAX_MESSAGE_LENGTH} characters allowed.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to use the chat.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const userMessage: Message = { role: 'user', content: trimmedInput };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
@@ -131,6 +185,21 @@ export const ChatBot = () => {
       handleSend();
     }
   };
+
+  // Show sign-in prompt if not authenticated
+  if (!user) {
+    return (
+      <div className="flex flex-col h-full bg-background items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">AI Assistant</h2>
+          <p className="text-muted-foreground">Sign in to chat with our AI assistant about bookings and grooming tips!</p>
+          <Link to="/auth">
+            <Button className="mt-4">Sign In to Chat</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -180,16 +249,20 @@ export const ChatBot = () => {
         <div className="flex gap-2">
           <Input
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => setInput(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
             onKeyPress={handleKeyPress}
             placeholder="Type your message..."
             disabled={isLoading}
             className="flex-1"
+            maxLength={MAX_MESSAGE_LENGTH}
           />
           <Button onClick={handleSend} disabled={!input.trim() || isLoading}>
             <span className="material-symbols-outlined">send</span>
           </Button>
         </div>
+        <p className="text-xs text-muted-foreground mt-1 text-right">
+          {input.length}/{MAX_MESSAGE_LENGTH}
+        </p>
       </div>
     </div>
   );
