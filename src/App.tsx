@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Reviews from "./pages/Reviews";
 import SalonAuth from "./pages/SalonAuth";
 import SalonDashboard from "./pages/SalonDashboard";
@@ -23,6 +24,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/salon-login" element={<SalonAuth />} />
             <Route path="/salon-dashboard" element={<SalonDashboard />} />
