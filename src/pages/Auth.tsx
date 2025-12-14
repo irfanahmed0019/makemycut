@@ -39,11 +39,13 @@ const signInSchema = z.object({
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { signIn, signUp, signInWithGoogle, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -67,6 +69,39 @@ export default function Auth() {
     };
     checkUserAndRedirect();
   }, [user, loading, navigate]);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: error.message,
+        });
+      } else {
+        toast({
+          title: 'Email Sent',
+          description: 'Check your inbox for the password reset link.',
+        });
+        setIsForgotPassword(false);
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Something went wrong. Please try again.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -314,6 +349,42 @@ export default function Auth() {
               <Button type="submit" className="w-full">
                 Sign In
               </Button>
+              <button
+                type="button"
+                onClick={() => setIsForgotPassword(true)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors w-full text-center mt-2"
+              >
+                Forgot your password?
+              </button>
+            </form>
+          )}
+
+          {isForgotPassword && (
+            <form onSubmit={handleForgotPassword} className="space-y-4 mt-6">
+              <p className="text-sm text-muted-foreground text-center mb-4">
+                Enter your email and we'll send you a link to reset your password.
+              </p>
+              <div>
+                <Label htmlFor="resetEmail">Email</Label>
+                <Input
+                  id="resetEmail"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="you@example.com"
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? 'Sending...' : 'Send Reset Link'}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setIsForgotPassword(false)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors w-full text-center"
+              >
+                Back to Sign In
+              </button>
             </form>
           )}
         </div>
