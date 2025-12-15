@@ -109,12 +109,12 @@ export default function Auth() {
     e.preventDefault();
     setIsSubmitting(true);
     
+    // Format phone number - ensure it starts with +
+    const formattedPhone = phone.trim().startsWith('+') ? phone.trim() : `+${phone.trim()}`;
+    
     try {
       const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-        },
+        phone: formattedPhone,
       });
       
       if (error) {
@@ -126,7 +126,7 @@ export default function Auth() {
       } else {
         toast({
           title: 'OTP Sent',
-          description: 'Check your email for the verification code.',
+          description: 'Check your phone for the verification code.',
         });
         setAuthView('otp-verify');
       }
@@ -145,11 +145,13 @@ export default function Auth() {
     e.preventDefault();
     setIsSubmitting(true);
     
+    const formattedPhone = phone.trim().startsWith('+') ? phone.trim() : `+${phone.trim()}`;
+    
     try {
       const { error } = await supabase.auth.verifyOtp({
-        email: email.trim(),
+        phone: formattedPhone,
         token: otp,
-        type: 'email',
+        type: 'sms',
       });
       
       if (error) {
@@ -442,17 +444,17 @@ export default function Auth() {
           {authView === 'otp-request' && (
             <form onSubmit={handleSendOTP} className="space-y-4">
               <p className="text-sm text-muted-foreground text-center mb-4">
-                Enter your email and we'll send you a one-time code to sign in.
+                Enter your phone number and we'll send you a one-time code to sign in.
               </p>
               <div>
-                <Label htmlFor="otpEmail">Email</Label>
+                <Label htmlFor="otpPhone">Phone Number</Label>
                 <Input
-                  id="otpEmail"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="otpPhone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   required
-                  placeholder="you@example.com"
+                  placeholder="+91 98765 43210"
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
@@ -472,7 +474,7 @@ export default function Auth() {
           {authView === 'otp-verify' && (
             <form onSubmit={handleVerifyOTP} className="space-y-4">
               <p className="text-sm text-muted-foreground text-center mb-4">
-                Enter the 6-digit code sent to {email}
+                Enter the 6-digit code sent to {phone}
               </p>
               <div className="flex justify-center">
                 <InputOTP
