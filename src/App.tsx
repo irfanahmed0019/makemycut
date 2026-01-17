@@ -4,12 +4,18 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
+
+// Customer routes
+import CustomerHome from "@/features/customer/pages/CustomerHome";
+import CustomerAuth from "@/features/customer/pages/CustomerAuth";
 import Reviews from "./pages/Reviews";
-import SalonAuth from "./pages/SalonAuth";
+import ResetPassword from "./pages/ResetPassword";
+
+// Salon routes
+import SalonAuth from "@/features/salon/pages/SalonAuth";
 import SalonDashboard from "./pages/SalonDashboard";
+
+// Shared
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,13 +28,17 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
+            {/* Customer Routes */}
+            <Route path="/" element={<CustomerHome />} />
+            <Route path="/auth" element={<CustomerAuth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/reviews" element={<Reviews />} />
+            
+            {/* Salon Routes */}
             <Route path="/salon-login" element={<SalonAuth />} />
             <Route path="/salon-dashboard" element={<SalonDashboard />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            
+            {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
