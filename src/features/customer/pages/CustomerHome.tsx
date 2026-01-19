@@ -5,8 +5,8 @@ import { Bookings } from '@/features/customer/components/Bookings';
 import { TrustedPicks } from '@/features/customer/components/TrustedPicks';
 import { Profile } from '@/features/customer/components/Profile';
 import { ConfirmBooking } from '@/features/customer/components/ConfirmBooking';
-import { BookingQRCode } from '@/features/customer/components/BookingQRCode';
 import { LaunchCountdown } from '@/features/shared/components/LaunchCountdown';
+import { BookingConfirmed } from '@/features/customer/components/BookingConfirmed';
 
 const CustomerHome = () => {
   const [activeSection, setActiveSection] = useState<string>('home');
@@ -23,8 +23,8 @@ const CustomerHome = () => {
 
   const handleBookNow = (barber: any) => { setSelectedBarber(barber); setActiveSection('confirm-booking'); };
   const handleBack = () => { setActiveSection('home'); setSelectedBarber(null); };
-  const handleConfirm = (booking: any) => { setConfirmedBooking(booking); setActiveSection('qr-code'); setSelectedBarber(null); };
-  const handleQRBack = () => { setActiveSection('home'); setConfirmedBooking(null); };
+  const handleConfirm = (booking: any) => { setConfirmedBooking(booking); setActiveSection('booking-confirmed'); setSelectedBarber(null); };
+  const handleConfirmedBack = () => { setActiveSection('home'); setConfirmedBooking(null); };
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div></div>;
@@ -45,7 +45,7 @@ const CustomerHome = () => {
         {activeSection === 'home' && <><TrustedPicks onBookNow={handleBookNow} /><LaunchCountdown /></>}
         {activeSection === 'profile' && <Profile />}
         {activeSection === 'confirm-booking' && selectedBarber && <ConfirmBooking barber={selectedBarber} onBack={handleBack} onConfirm={handleConfirm} />}
-        {activeSection === 'qr-code' && confirmedBooking && <BookingQRCode booking={confirmedBooking} onBack={handleQRBack} />}
+        {activeSection === 'booking-confirmed' && confirmedBooking && <BookingConfirmed booking={confirmedBooking} onBack={handleConfirmedBack} />}
       </main>
       <footer className="sticky bottom-0 border-t border-border bg-card">
         <nav className="flex justify-around px-4 pt-2 pb-4">

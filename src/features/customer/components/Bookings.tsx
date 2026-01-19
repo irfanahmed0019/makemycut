@@ -3,8 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { QRCodeSVG } from 'qrcode.react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Booking {
   id: string;
@@ -20,7 +18,6 @@ interface Booking {
 export const Bookings = () => {
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [historyBookings, setHistoryBookings] = useState<Booking[]>([]);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -79,17 +76,22 @@ export const Bookings = () => {
                     Latest Booking
                   </div>
                 )}
-                <div className="p-4 flex gap-4">
-                  <button 
-                    onClick={() => setSelectedBooking(booking)}
-                    className="w-24 h-24 flex items-center justify-center bg-white rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                  >
-                    <QRCodeSVG value={booking.id} size={80} />
-                  </button>
-                  <div className="flex-1">
-                    <h4 className="text-lg font-bold text-card-foreground">{booking.barbers.name}</h4>
-                    <p className="text-muted-foreground">{booking.services.name}</p>
-                    <p className="text-foreground mt-1">₹{booking.services.price}</p>
+                <div className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="text-lg font-bold text-card-foreground">{booking.barbers.name}</h4>
+                      <p className="text-muted-foreground">{booking.services.name}</p>
+                      <p className="text-foreground mt-1">₹{booking.services.price}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        booking.payment_status === 'paid' 
+                          ? 'bg-green-500/10 text-green-500' 
+                          : 'bg-amber-500/10 text-amber-500'
+                      }`}>
+                        {booking.payment_status === 'paid' ? 'Paid' : 'Pay at Salon'}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div className="px-4 pb-4 border-t border-border">
@@ -141,48 +143,6 @@ export const Bookings = () => {
           </div>
         )}
       </div>
-
-      <Dialog open={!!selectedBooking} onOpenChange={() => setSelectedBooking(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Booking QR Code</DialogTitle>
-          </DialogHeader>
-          {selectedBooking && (
-            <div className="space-y-4">
-              <div className="bg-white p-6 rounded-lg flex items-center justify-center">
-                <QRCodeSVG value={selectedBooking.id} size={200} level="H" includeMargin />
-              </div>
-              <div className="space-y-3 bg-muted/50 rounded-lg p-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Salon</p>
-                  <p className="font-semibold">{selectedBooking.barbers.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Service</p>
-                  <p className="font-semibold">{selectedBooking.services.name}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-lg">calendar_today</span>
-                  <span>{format(new Date(selectedBooking.booking_date), 'MMM dd, yyyy')}</span>
-                  <span>·</span>
-                  <span className="material-symbols-outlined text-lg">schedule</span>
-                  <span>{selectedBooking.booking_time}</span>
-                </div>
-                <div className="pt-2 border-t">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm text-muted-foreground">Amount</span>
-                    <span className="font-semibold">₹{selectedBooking.services.price}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Payment</span>
-                    <span className="text-sm capitalize">{selectedBooking.payment_method?.replace('_', ' ')}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </section>
   );
 };
