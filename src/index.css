@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,88 +10,84 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* MakeMyCut brand colors */
-    --maroon: 0 61% 38%;
-    --beige: 30 11% 82%;
-    --cream: 48 100% 99%;
-    --dark-bg: 30 5% 3%;
-    --card-bg: 30 3% 10%;
+    /* MakeMyCut brand colors - HSL values */
+    --brand-red: 359 58% 39%;
+    --brand-red-hover: 359 58% 43%;
+    --near-black: 0 0% 4%;
+    --dark-surface: 0 0% 7%;
+    --divider: 0 0% 12%;
+    --text-primary: 0 0% 100%;
+    --text-muted: 0 0% 63%;
     
-    --background: var(--dark-bg);
-    --foreground: var(--beige);
+    --background: var(--near-black);
+    --foreground: var(--text-primary);
 
-    --card: var(--card-bg);
-    --card-foreground: var(--cream);
+    --card: var(--dark-surface);
+    --card-foreground: var(--text-primary);
 
-    --popover: var(--card-bg);
-    --popover-foreground: var(--beige);
+    --popover: var(--dark-surface);
+    --popover-foreground: var(--text-primary);
 
-    --primary: var(--maroon);
-    --primary-foreground: var(--cream);
+    --primary: var(--brand-red);
+    --primary-foreground: var(--text-primary);
 
-    --secondary: var(--card-bg);
-    --secondary-foreground: var(--beige);
+    --secondary: var(--dark-surface);
+    --secondary-foreground: var(--text-muted);
 
-    --muted: 30 3% 15%;
-    --muted-foreground: 30 5% 60%;
+    --muted: var(--divider);
+    --muted-foreground: var(--text-muted);
 
-    --accent: var(--maroon);
-    --accent-foreground: var(--cream);
+    --accent: var(--brand-red);
+    --accent-foreground: var(--text-primary);
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: var(--cream);
+    --destructive-foreground: var(--text-primary);
 
-    --border: 30 3% 20%;
-    --input: 30 3% 20%;
-    --ring: var(--maroon);
+    --border: var(--divider);
+    --input: var(--divider);
+    --ring: var(--brand-red);
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: var(--dark-bg);
-    --foreground: var(--beige);
+    --background: var(--near-black);
+    --foreground: var(--text-primary);
 
-    --card: var(--card-bg);
-    --card-foreground: var(--cream);
+    --card: var(--dark-surface);
+    --card-foreground: var(--text-primary);
 
-    --popover: var(--card-bg);
-    --popover-foreground: var(--beige);
+    --popover: var(--dark-surface);
+    --popover-foreground: var(--text-primary);
 
-    --primary: var(--maroon);
-    --primary-foreground: var(--cream);
+    --primary: var(--brand-red);
+    --primary-foreground: var(--text-primary);
 
-    --secondary: var(--card-bg);
-    --secondary-foreground: var(--beige);
+    --secondary: var(--dark-surface);
+    --secondary-foreground: var(--text-muted);
 
-    --muted: 30 3% 15%;
-    --muted-foreground: 30 5% 60%;
+    --muted: var(--divider);
+    --muted-foreground: var(--text-muted);
 
-    --accent: var(--maroon);
-    --accent-foreground: var(--cream);
+    --accent: var(--brand-red);
+    --accent-foreground: var(--text-primary);
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: var(--cream);
+    --destructive-foreground: var(--text-primary);
 
-    --border: 30 3% 20%;
-    --input: 30 3% 20%;
-    --ring: var(--maroon);
+    --border: var(--divider);
+    --input: var(--divider);
+    --ring: var(--brand-red);
+    
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -108,9 +106,13 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Poppins', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  .font-display {
+    font-family: 'Playfair Display', serif;
   }
 
   .material-symbols-outlined {

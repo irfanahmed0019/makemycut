@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { Separator } from '@/components/ui/separator';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,10 +36,28 @@ export default function CustomerAuth() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Role-based routing after authentication
   useEffect(() => {
-    if (user && !loading) {
-      navigate('/', { replace: true });
-    }
+    const handleRoleBasedRedirect = async () => {
+      if (!user || loading) return;
+      
+      // Check if user is a salon owner (has a barber shop)
+      const { data: barberData } = await supabase
+        .from('barbers')
+        .select('id')
+        .eq('owner_id', user.id)
+        .maybeSingle();
+      
+      if (barberData) {
+        // Salon owner - redirect to dashboard
+        navigate('/salon-dashboard', { replace: true });
+      } else {
+        // Customer - redirect to home
+        navigate('/', { replace: true });
+      }
+    };
+    
+    handleRoleBasedRedirect();
   }, [user, loading, navigate]);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -115,30 +132,32 @@ export default function CustomerAuth() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-center bg-background px-6 py-12">
+    <div className="min-h-screen flex flex-col justify-center bg-gradient-to-b from-[hsl(0,0%,4%)] to-[hsl(0,0%,7%)] px-6 py-12">
       <div className="w-full max-w-sm mx-auto">
-        {/* Logo / Title */}
-        <div className="text-center mb-10">
-          <h1 className="text-5xl font-serif italic text-primary leading-tight">
+        {/* Brand Header */}
+        <div className="text-center mb-12">
+          <h1 className="font-display text-6xl font-semibold text-primary leading-[1.1] tracking-tight">
             Make My<br />Cut
           </h1>
-          <p className="text-primary/80 italic mt-3 text-lg tracking-wide">Your Style. Your Time.</p>
+          <p className="text-muted-foreground mt-4 text-base tracking-wide">
+            Your Style. Your Time.
+          </p>
         </div>
 
         {authView === 'login' && (
           <div className="space-y-6">
-            {/* Google Button */}
+            {/* Google Button - Light neutral background */}
             <Button 
               type="button" 
               variant="outline"
-              className="w-full h-14 text-base font-medium bg-card-foreground text-background hover:bg-card-foreground/90 border-0 rounded-full"
+              className="w-full h-14 text-base font-medium bg-[hsl(0,0%,95%)] text-[hsl(0,0%,10%)] hover:bg-[hsl(0,0%,90%)] border-0 rounded-2xl shadow-sm"
               onClick={signInWithGoogle}
             >
               <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
@@ -150,20 +169,20 @@ export default function CustomerAuth() {
               Continue with Google
             </Button>
 
-            {/* Separator */}
-            <div className="relative">
+            {/* Subtle Divider */}
+            <div className="relative py-2">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
+                <span className="w-full border-t border-[hsl(0,0%,12%)]" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-4 text-muted-foreground">OR</span>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-[hsl(0,0%,4%)] px-4 text-muted-foreground uppercase tracking-wider">OR</span>
               </div>
             </div>
 
             {/* Login Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm text-foreground">Email</Label>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-1">
+                <Label htmlFor="email" className="text-sm font-medium text-foreground">Email</Label>
                 <Input 
                   id="email" 
                   type="email" 
@@ -171,13 +190,13 @@ export default function CustomerAuth() {
                   onChange={(e) => setEmail(e.target.value)} 
                   required 
                   placeholder="you@example.com"
-                  className={`h-12 bg-transparent border-0 border-b border-border rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary ${errors.email ? 'border-destructive' : ''}`}
+                  className={`h-12 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.email ? 'border-destructive' : ''}`}
                 />
                 {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm text-foreground">Password</Label>
+              <div className="space-y-1">
+                <Label htmlFor="password" className="text-sm font-medium text-foreground">Password</Label>
                 <Input 
                   id="password" 
                   type="password" 
@@ -185,21 +204,21 @@ export default function CustomerAuth() {
                   onChange={(e) => setPassword(e.target.value)} 
                   required 
                   placeholder="••••••••"
-                  className={`h-12 bg-transparent border-0 border-b border-border rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary ${errors.password ? 'border-destructive' : ''}`}
+                  className={`h-12 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.password ? 'border-destructive' : ''}`}
                 />
                 {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
               </div>
 
               <Button 
                 type="submit" 
-                className="w-full h-14 text-base font-semibold rounded-lg mt-6"
+                className="w-full h-14 text-base font-semibold rounded-xl mt-2 shadow-lg shadow-primary/20"
               >
                 Step Inside
               </Button>
             </form>
 
-            {/* Footer Links */}
-            <div className="text-center space-y-3 pt-2">
+            {/* Footer Link - Subtle */}
+            <div className="text-center pt-2">
               <button 
                 type="button" 
                 onClick={() => setAuthView('signup')} 
@@ -207,14 +226,6 @@ export default function CustomerAuth() {
               >
                 Don't have an account? <span className="text-foreground font-medium">Sign up</span>
               </button>
-              <div className="flex justify-center gap-4 text-xs">
-                <button type="button" onClick={() => setAuthView('otp-request')} className="text-muted-foreground hover:text-foreground transition-colors">
-                  Sign in with OTP
-                </button>
-                <button type="button" onClick={() => setAuthView('forgot-password')} className="text-muted-foreground hover:text-foreground transition-colors">
-                  Forgot password?
-                </button>
-              </div>
             </div>
           </div>
         )}
@@ -222,8 +233,8 @@ export default function CustomerAuth() {
         {authView === 'signup' && (
           <div className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="fullName" className="text-sm text-foreground">Full Name</Label>
+              <div className="space-y-1">
+                <Label htmlFor="fullName" className="text-sm font-medium text-foreground">Full Name</Label>
                 <Input 
                   id="fullName" 
                   type="text" 
@@ -231,13 +242,13 @@ export default function CustomerAuth() {
                   onChange={(e) => setFullName(e.target.value)} 
                   required 
                   placeholder="John Doe"
-                  className={`h-12 bg-transparent border-0 border-b border-border rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary ${errors.fullName ? 'border-destructive' : ''}`}
+                  className={`h-12 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.fullName ? 'border-destructive' : ''}`}
                 />
                 {errors.fullName && <p className="text-xs text-destructive mt-1">{errors.fullName}</p>}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm text-foreground">Phone Number</Label>
+              <div className="space-y-1">
+                <Label htmlFor="phone" className="text-sm font-medium text-foreground">Phone Number</Label>
                 <Input 
                   id="phone" 
                   type="tel" 
@@ -245,13 +256,13 @@ export default function CustomerAuth() {
                   onChange={(e) => setPhone(e.target.value)} 
                   required 
                   placeholder="+1 (555) 000-0000"
-                  className={`h-12 bg-transparent border-0 border-b border-border rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary ${errors.phone ? 'border-destructive' : ''}`}
+                  className={`h-12 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.phone ? 'border-destructive' : ''}`}
                 />
                 {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="signupEmail" className="text-sm text-foreground">Email</Label>
+              <div className="space-y-1">
+                <Label htmlFor="signupEmail" className="text-sm font-medium text-foreground">Email</Label>
                 <Input 
                   id="signupEmail" 
                   type="email" 
@@ -259,13 +270,13 @@ export default function CustomerAuth() {
                   onChange={(e) => setEmail(e.target.value)} 
                   required 
                   placeholder="you@example.com"
-                  className={`h-12 bg-transparent border-0 border-b border-border rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary ${errors.email ? 'border-destructive' : ''}`}
+                  className={`h-12 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.email ? 'border-destructive' : ''}`}
                 />
                 {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="signupPassword" className="text-sm text-foreground">Password</Label>
+              <div className="space-y-1">
+                <Label htmlFor="signupPassword" className="text-sm font-medium text-foreground">Password</Label>
                 <Input 
                   id="signupPassword" 
                   type="password" 
@@ -273,13 +284,13 @@ export default function CustomerAuth() {
                   onChange={(e) => setPassword(e.target.value)} 
                   required 
                   placeholder="••••••••"
-                  className={`h-12 bg-transparent border-0 border-b border-border rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary ${errors.password ? 'border-destructive' : ''}`}
+                  className={`h-12 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.password ? 'border-destructive' : ''}`}
                 />
                 {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
                 {!errors.password && <p className="text-xs text-muted-foreground mt-1">Min 8 characters with uppercase, lowercase, and number</p>}
               </div>
 
-              <Button type="submit" className="w-full h-14 text-base font-semibold rounded-lg mt-6">
+              <Button type="submit" className="w-full h-14 text-base font-semibold rounded-xl mt-2 shadow-lg shadow-primary/20">
                 Create Account
               </Button>
             </form>
@@ -298,8 +309,8 @@ export default function CustomerAuth() {
           <div className="space-y-6">
             <p className="text-sm text-muted-foreground text-center">Enter your email and we'll send you a link to reset your password.</p>
             <form onSubmit={handleForgotPassword} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="resetEmail" className="text-sm text-foreground">Email</Label>
+              <div className="space-y-1">
+                <Label htmlFor="resetEmail" className="text-sm font-medium text-foreground">Email</Label>
                 <Input 
                   id="resetEmail" 
                   type="email" 
@@ -307,10 +318,10 @@ export default function CustomerAuth() {
                   onChange={(e) => setEmail(e.target.value)} 
                   required 
                   placeholder="you@example.com"
-                  className="h-12 bg-transparent border-0 border-b border-border rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary"
+                  className="h-12 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors"
                 />
               </div>
-              <Button type="submit" className="w-full h-14 text-base font-semibold rounded-lg" disabled={isSubmitting}>
+              <Button type="submit" className="w-full h-14 text-base font-semibold rounded-xl shadow-lg shadow-primary/20" disabled={isSubmitting}>
                 {isSubmitting ? 'Sending...' : 'Send Reset Link'}
               </Button>
             </form>
@@ -328,8 +339,8 @@ export default function CustomerAuth() {
           <div className="space-y-6">
             <p className="text-sm text-muted-foreground text-center">Enter your email and we'll send you a one-time code to sign in.</p>
             <form onSubmit={handleSendOTP} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="otpEmail" className="text-sm text-foreground">Email</Label>
+              <div className="space-y-1">
+                <Label htmlFor="otpEmail" className="text-sm font-medium text-foreground">Email</Label>
                 <Input 
                   id="otpEmail" 
                   type="email" 
@@ -337,10 +348,10 @@ export default function CustomerAuth() {
                   onChange={(e) => setEmail(e.target.value)} 
                   required 
                   placeholder="you@example.com"
-                  className="h-12 bg-transparent border-0 border-b border-border rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary"
+                  className="h-12 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors"
                 />
               </div>
-              <Button type="submit" className="w-full h-14 text-base font-semibold rounded-lg" disabled={isSubmitting}>
+              <Button type="submit" className="w-full h-14 text-base font-semibold rounded-xl shadow-lg shadow-primary/20" disabled={isSubmitting}>
                 {isSubmitting ? 'Sending...' : 'Send OTP'}
               </Button>
             </form>
@@ -370,7 +381,7 @@ export default function CustomerAuth() {
                   </InputOTPGroup>
                 </InputOTP>
               </div>
-              <Button type="submit" className="w-full h-14 text-base font-semibold rounded-lg" disabled={isSubmitting || otp.length !== 6}>
+              <Button type="submit" className="w-full h-14 text-base font-semibold rounded-xl shadow-lg shadow-primary/20" disabled={isSubmitting || otp.length !== 6}>
                 {isSubmitting ? 'Verifying...' : 'Verify & Sign In'}
               </Button>
             </form>
