@@ -73,10 +73,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         title: "Sign up failed",
         description: error.message
       });
+      return { error };
     } else {
       toast({
-        title: "Success!",
-        description: "Account created. You can now sign in."
+        title: "Almost there!",
+        description: "Check your email for the verification code."
       });
     }
 
