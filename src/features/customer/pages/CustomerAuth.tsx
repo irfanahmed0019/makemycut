@@ -21,7 +21,7 @@ const signInSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
-type AuthView = 'login' | 'signup' | 'forgot-password' | 'otp-request' | 'otp-verify';
+type AuthView = 'login' | 'signup' | 'forgot-password' | 'otp-request' | 'otp-verify' | 'signup-otp-verify';
 
 export default function CustomerAuth() {
   const [authView, setAuthView] = useState<AuthView>('login');
@@ -112,13 +112,18 @@ export default function CustomerAuth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+    setIsSubmitting(true);
     try {
       if (authView === 'login') {
         const validatedData = signInSchema.parse({ email, password });
         await signIn(validatedData.email, validatedData.password);
       } else if (authView === 'signup') {
         const validatedData = signUpSchema.parse({ fullName, phone, email, password });
-        await signUp(validatedData.email, validatedData.password, validatedData.fullName, validatedData.phone);
+        const { error } = await signUp(validatedData.email, validatedData.password, validatedData.fullName, validatedData.phone);
+        if (!error) {
+          // Move to OTP verification after successful signup
+          setAuthView('signup-otp-verify');
+        }
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -127,6 +132,44 @@ export default function CustomerAuth() {
         setErrors(fieldErrors);
         toast({ variant: 'destructive', title: 'Validation Error', description: error.errors[0].message });
       }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifySignupOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({ 
+        email: email.trim(), 
+        token: otp, 
+        type: 'signup' 
+      });
+      if (error) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+      } else {
+        toast({ title: 'Welcome!', description: 'Your account has been verified successfully.' });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+      });
+      if (error) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+      } else {
+        toast({ title: 'OTP Resent', description: 'Check your email for the new verification code.' });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -391,6 +434,64 @@ export default function CustomerAuth() {
               </button>
               <button type="button" onClick={() => setAuthView('login')} className="text-sm text-muted-foreground hover:text-foreground transition-colors block w-full">
                 Back to Sign In
+              </button>
+            </div>
+          </div>
+        )}
+
+        {authView === 'signup-otp-verify' && (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-foreground">Verify your email</h2>
+              <p className="text-sm text-muted-foreground">
+                We've sent a 6-digit code to<br />
+                <span className="text-foreground font-medium">{email}</span>
+              </p>
+            </div>
+            
+            <form onSubmit={handleVerifySignupOTP} className="space-y-5">
+              <div className="flex justify-center">
+                <InputOTP maxLength={6} value={otp} onChange={(value) => setOtp(value)}>
+                  <InputOTPGroup className="gap-2">
+                    <InputOTPSlot index={0} className="w-12 h-14 text-xl border-[hsl(0,0%,12%)] bg-transparent rounded-lg" />
+                    <InputOTPSlot index={1} className="w-12 h-14 text-xl border-[hsl(0,0%,12%)] bg-transparent rounded-lg" />
+                    <InputOTPSlot index={2} className="w-12 h-14 text-xl border-[hsl(0,0%,12%)] bg-transparent rounded-lg" />
+                    <InputOTPSlot index={3} className="w-12 h-14 text-xl border-[hsl(0,0%,12%)] bg-transparent rounded-lg" />
+                    <InputOTPSlot index={4} className="w-12 h-14 text-xl border-[hsl(0,0%,12%)] bg-transparent rounded-lg" />
+                    <InputOTPSlot index={5} className="w-12 h-14 text-xl border-[hsl(0,0%,12%)] bg-transparent rounded-lg" />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full h-14 text-base font-semibold rounded-xl shadow-lg shadow-primary/20" 
+                disabled={isSubmitting || otp.length !== 6}
+              >
+                {isSubmitting ? 'Verifying...' : 'Join MakeMyCut'}
+              </Button>
+            </form>
+            
+            <div className="text-center space-y-3">
+              <button 
+                type="button" 
+                onClick={handleResendOTP} 
+                disabled={isSubmitting}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                Didn't receive the code? <span className="text-primary font-medium">Resend</span>
+              </button>
+              <button 
+                type="button" 
+                onClick={() => { setAuthView('signup'); setOtp(''); }} 
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors block w-full"
+              >
+                ← Back to Sign Up
               </button>
             </div>
           </div>
