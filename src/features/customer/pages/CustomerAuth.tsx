@@ -182,14 +182,14 @@ export default function CustomerAuth() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-center bg-gradient-to-b from-[hsl(0,0%,4%)] to-[hsl(0,0%,7%)] px-6 py-12">
+    <div className="min-h-screen flex flex-col justify-center bg-gradient-to-b from-[#0B0B0B] to-[#121212] px-6 py-12">
       <div className="w-full max-w-sm mx-auto">
         {/* Brand Header */}
         <div className="text-center mb-12">
-          <h1 className="font-display text-6xl font-semibold italic text-primary leading-[1.1] tracking-tight">
+          <h1 className="font-display text-6xl font-semibold italic text-[#9E2A2B] leading-[1.1] tracking-tight">
             Make My<br />Cut
           </h1>
-          <p className="text-muted-foreground mt-4 text-base tracking-wide italic">
+          <p className="text-[#A0A0A0] mt-4 text-base tracking-wide italic font-sans">
             Your Style. Your Time.
           </p>
         </div>
@@ -200,7 +200,7 @@ export default function CustomerAuth() {
             <Button 
               type="button" 
               variant="outline"
-              className="w-full h-14 text-base font-medium bg-[hsl(0,0%,95%)] text-[hsl(0,0%,10%)] hover:bg-[hsl(0,0%,90%)] border-0 rounded-2xl shadow-sm"
+              className="w-full h-14 text-base font-medium bg-[#F5F5F5] text-[#1A1A1A] hover:bg-[#E8E8E8] border-0 rounded-2xl shadow-sm"
               onClick={signInWithGoogle}
             >
               <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
@@ -213,19 +213,19 @@ export default function CustomerAuth() {
             </Button>
 
             {/* Subtle Divider */}
-            <div className="relative py-2">
+            <div className="relative py-3">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-[hsl(0,0%,12%)]" />
+                <span className="w-full border-t border-[#1F1F1F]" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-[hsl(0,0%,4%)] px-4 text-muted-foreground uppercase tracking-wider">OR</span>
+                <span className="bg-[#0B0B0B] px-4 text-[#A0A0A0] uppercase tracking-wider">OR</span>
               </div>
             </div>
 
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-1">
-                <Label htmlFor="email" className="text-sm font-medium text-foreground">Email</Label>
+                <Label htmlFor="email" className="text-sm font-medium text-white">Email</Label>
                 <Input 
                   id="email" 
                   type="email" 
@@ -233,13 +233,13 @@ export default function CustomerAuth() {
                   onChange={(e) => setEmail(e.target.value)} 
                   required 
                   placeholder="you@example.com"
-                  className={`h-12 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.email ? 'border-destructive' : ''}`}
+                  className={`h-12 bg-transparent border-0 border-b border-[#1F1F1F] rounded-none px-0 text-white placeholder:text-[#A0A0A0] focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.email ? 'border-destructive' : ''}`}
                 />
                 {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="password" className="text-sm font-medium text-foreground">Password</Label>
+                <Label htmlFor="password" className="text-sm font-medium text-white">Password</Label>
                 <Input 
                   id="password" 
                   type="password" 
@@ -247,16 +247,17 @@ export default function CustomerAuth() {
                   onChange={(e) => setPassword(e.target.value)} 
                   required 
                   placeholder="••••••••"
-                  className={`h-12 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.password ? 'border-destructive' : ''}`}
+                  className={`h-12 bg-transparent border-0 border-b border-[#1F1F1F] rounded-none px-0 text-white placeholder:text-[#A0A0A0] focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.password ? 'border-destructive' : ''}`}
                 />
                 {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
               </div>
 
               <Button 
                 type="submit" 
-                className="w-full h-14 text-base font-semibold rounded-xl mt-2 shadow-lg shadow-primary/20"
+                disabled={isSubmitting}
+                className="w-full h-14 text-base font-semibold rounded-xl bg-[#9E2A2B] hover:bg-[#B02A2A] text-white shadow-lg shadow-[#9E2A2B]/20"
               >
-                Step Inside
+                {isSubmitting ? 'Signing in...' : 'Step Inside'}
               </Button>
             </form>
 
@@ -265,9 +266,9 @@ export default function CustomerAuth() {
               <button 
                 type="button" 
                 onClick={() => setAuthView('signup')} 
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm text-[#A0A0A0] hover:text-white transition-colors"
               >
-                Don't have an account? <span className="text-foreground font-medium">Sign up</span>
+                Don't have an account? <span className="text-white font-medium">Sign up</span>
               </button>
             </div>
           </div>
