@@ -186,10 +186,10 @@ export default function CustomerAuth() {
       <div className="w-full max-w-sm mx-auto">
         {/* Brand Header */}
         <div className="text-center mb-12">
-          <h1 className="font-display text-6xl font-semibold text-primary leading-[1.1] tracking-tight">
+          <h1 className="font-display text-6xl font-semibold italic text-primary leading-[1.1] tracking-tight">
             Make My<br />Cut
           </h1>
-          <p className="text-muted-foreground mt-4 text-base tracking-wide">
+          <p className="text-muted-foreground mt-4 text-base tracking-wide italic">
             Your Style. Your Time.
           </p>
         </div>
