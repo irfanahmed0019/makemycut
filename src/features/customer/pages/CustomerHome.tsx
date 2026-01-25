@@ -5,7 +5,6 @@ import { Bookings } from '@/features/customer/components/Bookings';
 import { TrustedPicks } from '@/features/customer/components/TrustedPicks';
 import { Profile } from '@/features/customer/components/Profile';
 import { ConfirmBooking } from '@/features/customer/components/ConfirmBooking';
-import { LaunchCountdown } from '@/features/shared/components/LaunchCountdown';
 import { BookingConfirmed } from '@/features/customer/components/BookingConfirmed';
 
 const CustomerHome = () => {
@@ -42,7 +41,7 @@ const CustomerHome = () => {
       </header>
       <main className="flex-grow px-4 pb-20 overflow-y-auto">
         {activeSection === 'bookings' && <Bookings />}
-        {activeSection === 'home' && <><TrustedPicks onBookNow={handleBookNow} /><LaunchCountdown /></>}
+        {activeSection === 'home' && <TrustedPicks onBookNow={handleBookNow} />}
         {activeSection === 'profile' && <Profile />}
         {activeSection === 'confirm-booking' && selectedBarber && <ConfirmBooking barber={selectedBarber} onBack={handleBack} onConfirm={handleConfirm} />}
         {activeSection === 'booking-confirmed' && confirmedBooking && <BookingConfirmed booking={confirmedBooking} onBack={handleConfirmedBack} />}
