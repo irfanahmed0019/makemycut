@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Barber {
   id: string;
@@ -14,29 +16,34 @@ interface TrustedPicksProps {
   onBookNow: (barber: Barber) => void;
 }
 
-// Only these two salons are shown
-const FEATURED_SALONS: Barber[] = [
-  {
-    id: 'the-barber-shop',
-    name: 'The Barber Shop',
-    description: 'Classic cuts and modern styles in a premium setting',
-    image_url: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
-    rating: 4.8,
-    review_count: 124,
-    address: 'MG Road, near Central Mall',
-  },
-  {
-    id: 'urban-edge-studio',
-    name: 'Urban Edge Studio',
-    description: 'Contemporary grooming experience for the modern gentleman',
-    image_url: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400',
-    rating: 4.7,
-    review_count: 89,
-    address: 'Brigade Road, near Coffee Day Junction',
-  },
-];
-
 export const TrustedPicks = ({ onBookNow }: TrustedPicksProps) => {
+  const [salons, setSalons] = useState<Barber[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSalons = async () => {
+      const { data, error } = await supabase
+        .from('barbers')
+        .select('id, name, description, image_url, rating, review_count, address')
+        .order('rating', { ascending: false })
+        .limit(10);
+
+      if (!error && data) {
+        setSalons(data.map(salon => ({
+          id: salon.id,
+          name: salon.name,
+          description: salon.description || '',
+          image_url: salon.image_url || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
+          rating: salon.rating || 0,
+          review_count: salon.review_count || 0,
+          address: salon.address || undefined,
+        })));
+      }
+      setIsLoading(false);
+    };
+
+    fetchSalons();
+  }, []);
   const renderBarberCard = (barber: Barber) => (
     <div key={barber.id} className="flex items-start gap-4 p-4 rounded-lg bg-card">
       <div className="flex-1 space-y-3">
@@ -64,6 +71,17 @@ export const TrustedPicks = ({ onBookNow }: TrustedPicksProps) => {
     </div>
   );
 
+  if (isLoading) {
+    return (
+      <section className="pt-4">
+        <h2 className="text-2xl font-bold mb-4 text-center">Home</h2>
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="pt-4">
       <h2 className="text-2xl font-bold mb-4 text-center">Home</h2>
@@ -71,7 +89,7 @@ export const TrustedPicks = ({ onBookNow }: TrustedPicksProps) => {
         <div>
           <h3 className="text-xl font-bold mb-4">Featured Salons</h3>
           <div className="space-y-4">
-            {FEATURED_SALONS.map(renderBarberCard)}
+            {salons.map(renderBarberCard)}
           </div>
         </div>
       </div>
