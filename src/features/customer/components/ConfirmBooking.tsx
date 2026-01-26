@@ -42,17 +42,26 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     fetchServices();
   }, [barber]);
 
+  // Default services if none exist in database
+  const defaultServices: Service[] = [
+    { id: 'default-haircut', name: 'Haircut', description: 'Classic haircut', price: 200, duration_minutes: 30 },
+    { id: 'default-shave', name: 'Shave', description: 'Clean shave', price: 100, duration_minutes: 20 },
+    { id: 'default-beard-trim', name: 'Beard Trim', description: 'Beard trimming and styling', price: 280, duration_minutes: 25 },
+  ];
+
   const fetchServices = async () => {
     const { data, error } = await supabase
       .from('services')
       .select('*')
       .eq('barber_id', barber.id);
 
-    if (!error && data) {
+    if (!error && data && data.length > 0) {
       setServices(data);
-      if (data.length > 0) {
-        setSelectedService(data[0].id);
-      }
+      setSelectedService(data[0].id);
+    } else {
+      // Use default services if none found
+      setServices(defaultServices);
+      setSelectedService(defaultServices[0].id);
     }
   };
 
