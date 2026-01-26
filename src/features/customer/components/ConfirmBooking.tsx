@@ -35,7 +35,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   const [selectedService, setSelectedService] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string>('10:00 AM');
-  const [paymentMethod, setPaymentMethod] = useState<string>('pay_now');
+  // Payment is always at salon - no selection needed
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
   useEffect(() => {
@@ -95,8 +95,8 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
       service_id: selectedService,
       booking_date: format(selectedDate, 'yyyy-MM-dd'),
       booking_time: selectedTime,
-      payment_method: paymentMethod,
-      payment_status: paymentMethod === 'pay_now' ? 'paid' : 'pending',
+      payment_method: 'pay_at_salon',
+      payment_status: 'pending',
       status: 'upcoming',
     }).select();
 
@@ -149,18 +149,15 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
       </p>
 
       <div className="px-4 pb-6">
-        <div className="flex items-center justify-between gap-4 rounded-xl bg-card p-4">
+          <div className="flex items-center justify-between gap-4 rounded-xl bg-card p-4">
           <div className="flex flex-col gap-1.5">
             <p className="text-sm text-muted-foreground">Saloon</p>
             <p className="text-lg font-bold">{barber.name}</p>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="material-symbols-outlined text-base text-primary">star</span>
-              <span>{barber.rating}</span>
-              <span>|</span>
-              <span>{barber.review_count} reviews</span>
-              <span>|</span>
-              <span>{barber.distance_km} km</span>
-            </div>
+            {barber.address && (
+              <p className="text-sm text-muted-foreground">
+                Location: {barber.address}
+              </p>
+            )}
           </div>
           <img
             src={barber.image_url || 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400'}
@@ -168,17 +165,6 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
             alt={barber.name}
           />
         </div>
-      </div>
-
-      <div className="px-4 pb-6">
-        <Button
-          variant="outline"
-          className="w-full flex items-center justify-center gap-2"
-          onClick={() => navigate('/reviews', { state: { barber } })}
-        >
-          <span className="material-symbols-outlined">rate_review</span>
-          <span>View All Reviews ({barber.review_count})</span>
-        </Button>
       </div>
 
       <h2 className="text-lg font-bold px-4 pb-3">Select Service</h2>
@@ -293,35 +279,6 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
         </div>
       </div>
 
-      <h2 className="text-lg font-bold px-4 pb-3 pt-6">Payment Options</h2>
-      <div className="flex flex-col gap-3 px-4 pb-6">
-        <label className="flex items-center gap-4 cursor-pointer">
-          <input
-            type="radio"
-            name="payment"
-            value="pay_now"
-            checked={paymentMethod === 'pay_now'}
-            onChange={(e) => setPaymentMethod(e.target.value)}
-            className="h-5 w-5"
-          />
-          <div className="flex grow items-center rounded-lg border border-border p-3">
-            <p className="text-base font-medium">Pay Now (UPI/Online)</p>
-          </div>
-        </label>
-        <label className="flex items-center gap-4 cursor-pointer">
-          <input
-            type="radio"
-            name="payment"
-            value="pay_at_salon"
-            checked={paymentMethod === 'pay_at_salon'}
-            onChange={(e) => setPaymentMethod(e.target.value)}
-            className="h-5 w-5"
-          />
-          <div className="flex grow items-center rounded-lg border border-border p-3">
-            <p className="text-base font-medium">Pay at Saloon</p>
-          </div>
-        </label>
-      </div>
 
       <div className="px-4 py-3">
         <Button onClick={handleConfirm} className="w-full h-14 text-lg font-bold">
