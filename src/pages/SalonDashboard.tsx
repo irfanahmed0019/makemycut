@@ -81,9 +81,14 @@ export default function SalonDashboard() {
           .eq('id', booking.user_id)
           .maybeSingle();
         
+        // Priority: profile full_name > fallback only if truly empty
+        const customerName = profile?.full_name && profile.full_name.trim() !== '' 
+          ? profile.full_name 
+          : null;
+        
         return {
           ...booking,
-          customer_name: profile?.full_name || 'Guest Customer',
+          customer_name: customerName || 'Walk-in Customer',
           customer_phone: profile?.phone || null,
         };
       })
