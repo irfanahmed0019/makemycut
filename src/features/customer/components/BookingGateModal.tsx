@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Smartphone, Mail } from 'lucide-react';
+import { X, Smartphone } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import mmcLogoBlack from '@/assets/mmc-logo-black.png';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -126,11 +127,11 @@ export const BookingGateModal = ({
             <>
               {/* App Icon */}
               <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg shadow-primary/20">
+                <div className="w-16 h-16 flex items-center justify-center">
                   <img
-                    src="/app-icon.png"
+                    src={mmcLogoBlack}
                     alt="MakeMyCut"
-                    className="w-full h-full object-cover"
+                    className="w-14 h-14 object-contain"
                   />
                 </div>
               </div>
