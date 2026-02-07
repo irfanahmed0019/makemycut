@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isBefore, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { BookingGateModal } from './BookingGateModal';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 interface Service {
   id: string;
@@ -28,15 +33,25 @@ const timeSlots = [
 ];
 
 export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProps) => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [selectedService, setSelectedService] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string>('10:00 AM');
-  // Payment is always at salon - no selection needed
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [showGateModal, setShowGateModal] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  // Capture install prompt
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
 
   useEffect(() => {
     fetchServices();
@@ -65,15 +80,18 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     }
   };
 
-  const handleConfirm = async () => {
+  const handleConfirmClick = () => {
     if (!user) {
-      toast({
-        variant: 'destructive',
-        title: 'Not Authenticated',
-        description: 'Please sign in to book an appointment',
-      });
+      // Show gate modal for unauthenticated users
+      setShowGateModal(true);
       return;
     }
+    // User is logged in, proceed with booking
+    processBooking();
+  };
+
+  const processBooking = async () => {
+    if (!user) return;
 
     if (!selectedService) {
       toast({
@@ -130,6 +148,12 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
         onConfirm(bookingData);
       }
     }
+  };
+
+  const handleGateSuccess = () => {
+    setShowGateModal(false);
+    // User just logged in, process the booking
+    processBooking();
   };
 
   const monthStart = startOfMonth(currentMonth);
@@ -290,10 +314,19 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
 
 
       <div className="px-4 py-3">
-        <Button onClick={handleConfirm} className="w-full h-14 text-lg font-bold">
+        <Button onClick={handleConfirmClick} className="w-full h-14 text-lg font-bold">
           Confirm Booking
         </Button>
       </div>
+
+      {/* Booking Gate Modal */}
+      <BookingGateModal
+        isOpen={showGateModal}
+        onClose={() => setShowGateModal(false)}
+        onSuccess={handleGateSuccess}
+        deferredPrompt={deferredPrompt}
+        setDeferredPrompt={setDeferredPrompt}
+      />
     </section>
   );
 };
