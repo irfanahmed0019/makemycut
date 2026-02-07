@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -13,6 +14,7 @@ const LAST_DISMISS_KEY = 'pwa_last_dismiss';
 const INTERACTIONS_BEFORE_REPROMPT = 3;
 
 export const InstallPrompt = () => {
+  const { user } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -23,9 +25,21 @@ export const InstallPrompt = () => {
       window.matchMedia('(display-mode: standalone)').matches;
   };
 
-  // Track meaningful interactions
+  // Check if user has confirmed a booking
+  const hasConfirmedBooking = () => {
+    return localStorage.getItem('booking_confirmed') === 'true';
+  };
+
+  // Should show prompt: only after login OR first confirmed booking
+  const shouldShowPrompt = useCallback(() => {
+    if (isInstalled()) return false;
+    // Only show if user is logged in OR has confirmed a booking
+    return user !== null || hasConfirmedBooking();
+  }, [user]);
+
+  // Track meaningful interactions for re-prompting
   const trackInteraction = useCallback(() => {
-    if (isInstalled()) return;
+    if (isInstalled() || !shouldShowPrompt()) return;
     
     const currentCount = parseInt(localStorage.getItem(INTERACTION_COUNT_KEY) || '0', 10);
     const newCount = currentCount + 1;
@@ -37,49 +51,31 @@ export const InstallPrompt = () => {
       localStorage.removeItem(LAST_DISMISS_KEY);
       localStorage.setItem(INTERACTION_COUNT_KEY, '0');
       
-      // Only show if we have the deferred prompt (Android) or iOS
       if (deferredPrompt || isIOS) {
         setShowPrompt(true);
       }
     }
-  }, [deferredPrompt, isIOS]);
+  }, [deferredPrompt, isIOS, shouldShowPrompt]);
 
   useEffect(() => {
-    // Already installed - never show
     if (isInstalled()) return;
 
     // Detect iOS
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(isIOSDevice);
 
-    // Listen for the beforeinstallprompt event (Android/Chrome)
+    // Listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      
-      // Check if first time or after interactions threshold
-      const lastDismiss = localStorage.getItem(LAST_DISMISS_KEY);
-      if (!lastDismiss) {
-        // First time - show after short delay
-        setTimeout(() => setShowPrompt(true), 2000);
-      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // For iOS, show after delay if first time
-    if (isIOSDevice) {
-      const lastDismiss = localStorage.getItem(LAST_DISMISS_KEY);
-      if (!lastDismiss) {
-        setTimeout(() => setShowPrompt(true), 2000);
-      }
-    }
-
-    // Track scroll and click interactions
+    // Track interactions
     const handleScroll = () => trackInteraction();
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      // Track meaningful clicks (buttons, links, cards)
       if (target.closest('button') || target.closest('a') || target.closest('[role="button"]')) {
         trackInteraction();
       }
@@ -95,9 +91,21 @@ export const InstallPrompt = () => {
     };
   }, [trackInteraction]);
 
+  // Show prompt after login or booking
+  useEffect(() => {
+    if (!shouldShowPrompt()) return;
+    if (isInstalled()) return;
+
+    const lastDismiss = localStorage.getItem(LAST_DISMISS_KEY);
+    if (!lastDismiss && (deferredPrompt || isIOS)) {
+      // Delay to avoid showing immediately on login
+      const timer = setTimeout(() => setShowPrompt(true), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, deferredPrompt, isIOS, shouldShowPrompt]);
+
   const handleInstall = async () => {
     if (isIOS) {
-      // Can't programmatically install on iOS, just close
       setShowPrompt(false);
       return;
     }
