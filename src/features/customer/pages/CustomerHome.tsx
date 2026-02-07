@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Bookings } from '@/features/customer/components/Bookings';
 import { TrustedPicks } from '@/features/customer/components/TrustedPicks';
@@ -11,6 +12,7 @@ const CustomerHome = () => {
   const [selectedBarber, setSelectedBarber] = useState<any>(null);
   const [confirmedBooking, setConfirmedBooking] = useState<any>(null);
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
   const handleBookNow = (barber: any) => {
     setSelectedBarber(barber);
@@ -35,10 +37,10 @@ const CustomerHome = () => {
     setConfirmedBooking(null);
   };
 
-  // Handle sections that require auth
+  // Handle sections that require auth - hard redirect to login
   const handleProtectedSection = (section: string) => {
     if (!user && (section === 'bookings' || section === 'profile')) {
-      // Don't navigate to protected sections without login
+      navigate('/auth');
       return;
     }
     setActiveSection(section);
