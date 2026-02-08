@@ -1,18 +1,35 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Bookings } from '@/features/customer/components/Bookings';
 import { TrustedPicks } from '@/features/customer/components/TrustedPicks';
 import { Profile } from '@/features/customer/components/Profile';
 import { ConfirmBooking } from '@/features/customer/components/ConfirmBooking';
 import { BookingConfirmed } from '@/features/customer/components/BookingConfirmed';
+import { BookingGateModal } from '@/features/customer/components/BookingGateModal';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 const CustomerHome = () => {
   const [activeSection, setActiveSection] = useState<string>('home');
   const [selectedBarber, setSelectedBarber] = useState<any>(null);
   const [confirmedBooking, setConfirmedBooking] = useState<any>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingSection, setPendingSection] = useState<string | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
+
+  // Listen for PWA install prompt
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
 
   const handleBookNow = (barber: any) => {
     setSelectedBarber(barber);
@@ -28,7 +45,6 @@ const CustomerHome = () => {
     setConfirmedBooking(booking);
     setActiveSection('booking-confirmed');
     setSelectedBarber(null);
-    // Mark first booking confirmed for install prompt
     localStorage.setItem('booking_confirmed', 'true');
   };
 
@@ -37,13 +53,27 @@ const CustomerHome = () => {
     setConfirmedBooking(null);
   };
 
-  // Handle sections that require auth - hard redirect to login
+  // Handle sections that require auth - show modal instead of redirect
   const handleProtectedSection = (section: string) => {
     if (!user && (section === 'bookings' || section === 'profile')) {
-      navigate('/auth');
+      setPendingSection(section);
+      setShowAuthModal(true);
       return;
     }
     setActiveSection(section);
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    if (pendingSection) {
+      setActiveSection(pendingSection);
+      setPendingSection(null);
+    }
+  };
+
+  const handleAuthClose = () => {
+    setShowAuthModal(false);
+    setPendingSection(null);
   };
 
   if (loading) {
@@ -138,6 +168,14 @@ const CustomerHome = () => {
           </button>
         </nav>
       </footer>
+
+      <BookingGateModal
+        isOpen={showAuthModal}
+        onClose={handleAuthClose}
+        onSuccess={handleAuthSuccess}
+        deferredPrompt={deferredPrompt}
+        setDeferredPrompt={setDeferredPrompt}
+      />
     </div>
   );
 };
