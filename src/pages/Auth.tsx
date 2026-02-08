@@ -317,7 +317,7 @@ export default function Auth() {
                   onClick={() => setAuthView('signup')}
                   className="text-sm text-muted-foreground hover:text-white transition-colors w-full"
                 >
-                  Don't have an account? <span className="text-primary">Sign up</span>
+                  Don't have an account? <span className="text-white underline">Sign up</span>
                 </button>
               </div>
             </>
