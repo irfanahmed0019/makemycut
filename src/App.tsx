@@ -18,11 +18,8 @@ import SalonDashboard from "./pages/SalonDashboard";
 
 // Shared
 import NotFound from "./pages/NotFound";
-
 const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+const App = () => <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
         <Toaster />
@@ -32,7 +29,7 @@ const App = () => (
           <Routes>
             {/* Customer Routes */}
             <Route path="/" element={<CustomerHome />} />
-            <Route path="/auth" element={<CustomerAuth />} />
+            <Route path="/auth" element={<CustomerAuth />} className="" />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/reviews" element={<Reviews />} />
             
@@ -46,7 +43,5 @@ const App = () => (
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
-  </QueryClientProvider>
-);
-
+  </QueryClientProvider>;
 export default App;
