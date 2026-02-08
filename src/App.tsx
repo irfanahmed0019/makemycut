@@ -29,7 +29,7 @@ const App = () => <QueryClientProvider client={queryClient}>
           <Routes>
             {/* Customer Routes */}
             <Route path="/" element={<CustomerHome />} />
-            <Route path="/auth" element={<CustomerAuth />} className="" />
+            <Route path="/auth" element={<CustomerAuth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/reviews" element={<Reviews />} />
             
