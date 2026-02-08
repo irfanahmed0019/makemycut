@@ -291,7 +291,7 @@ export default function CustomerAuth() {
               </div>
 
               <Button type="submit" disabled={isSubmitting} className="w-full h-14 text-base font-semibold rounded-xl bg-[#9E2A2B] hover:bg-[#B02A2A] text-white shadow-lg shadow-[#9E2A2B]/20">
-                {isSubmitting ? 'Signing in...' : 'Step Inside'}
+                {isSubmitting ? 'Signing in...' : 'Sign in'}
               </Button>
             </form>
 
