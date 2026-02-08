@@ -224,14 +224,15 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-card rounded-2xl p-8 shadow-lg">
-          <div className="text-center mb-8">
-            <h1 className="text-5xl font-bold mb-2 text-card-foreground" style={{ fontFamily: 'serif' }}>
-              Make My Cut
+    <div className="min-h-screen flex items-center justify-center bg-[#0B0B0B] p-4" style={{ background: 'radial-gradient(ellipse at center, #1a1a1a 0%, #0B0B0B 70%)' }}>
+      <div className="w-full max-w-sm">
+        <div className="px-6 py-8">
+          {/* Brand Title */}
+          <div className="text-center mb-10">
+            <h1 className="text-5xl font-bold italic text-white leading-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
+              Make My<br />Cut
             </h1>
-            <p className="text-lg text-muted-foreground" style={{ fontFamily: 'serif' }}>
+            <p className="text-base text-muted-foreground mt-3 italic" style={{ fontFamily: 'Playfair Display, serif' }}>
               Your Style. Your Time.
             </p>
           </div>
@@ -239,9 +240,11 @@ export default function Auth() {
           {/* Login View */}
           {authView === 'login' && (
             <>
+              {/* Google Button */}
               <Button
                 type="button"
-                className="w-full h-12 text-base"
+                variant="secondary"
+                className="w-full h-12 text-base rounded-full bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white border-0"
                 onClick={signInWithGoogle}
               >
                 <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
@@ -253,16 +256,18 @@ export default function Auth() {
                 Continue with Google
               </Button>
 
+              {/* OR Divider */}
               <div className="relative my-6">
-                <Separator />
-                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                <Separator className="bg-[#333]" />
+                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#0B0B0B] px-3 text-xs text-muted-foreground">
                   OR
                 </span>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email/Password Form */}
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className="text-sm text-muted-foreground">Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -272,13 +277,13 @@ export default function Auth() {
                       if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
                     }}
                     required
-                    placeholder="you@example.com"
-                    className={errors.email ? 'border-destructive' : ''}
+                    placeholder="name@example.com"
+                    className={`bg-transparent border-0 border-b border-[#444] rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary text-white placeholder:text-muted-foreground ${errors.email ? 'border-destructive' : ''}`}
                   />
                   {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
                 </div>
                 <div>
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className="text-sm text-muted-foreground">Password</Label>
                   <Input
                     id="password"
                     type="password"
@@ -289,34 +294,30 @@ export default function Auth() {
                     }}
                     required
                     placeholder="••••••••"
-                    className={errors.password ? 'border-destructive' : ''}
+                    className={`bg-transparent border-0 border-b border-[#444] rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary text-white placeholder:text-muted-foreground ${errors.password ? 'border-destructive' : ''}`}
                   />
                   {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
                 </div>
-                <Button type="submit" className="w-full">Sign In</Button>
+                <Button type="submit" className="w-full h-12 rounded-lg bg-[#6B2C2C] hover:bg-[#7d3434] text-white text-base font-medium mt-2">
+                  Step Inside
+                </Button>
               </form>
 
-              <div className="mt-4 space-y-2 text-center">
-                <button
-                  type="button"
-                  onClick={() => setAuthView('otp-request')}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors w-full"
-                >
-                  Sign in with OTP
-                </button>
+              {/* Secondary Links */}
+              <div className="mt-6 space-y-3 text-center">
                 <button
                   type="button"
                   onClick={() => setAuthView('forgot-password')}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors w-full"
+                  className="text-sm text-muted-foreground hover:text-white transition-colors w-full"
                 >
-                  Forgot your password?
+                  Forgot password?
                 </button>
                 <button
                   type="button"
                   onClick={() => setAuthView('signup')}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors w-full"
+                  className="text-sm text-muted-foreground hover:text-white transition-colors w-full"
                 >
-                  Don't have an account? Sign up
+                  Don't have an account? <span className="text-primary">Sign up</span>
                 </button>
               </div>
             </>
@@ -325,9 +326,9 @@ export default function Auth() {
           {/* Signup View */}
           {authView === 'signup' && (
             <>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <Label htmlFor="fullName">Full Name</Label>
+                  <Label htmlFor="fullName" className="text-sm text-muted-foreground">Full Name</Label>
                   <Input
                     id="fullName"
                     type="text"
@@ -338,12 +339,12 @@ export default function Auth() {
                     }}
                     required
                     placeholder="John Doe"
-                    className={errors.fullName ? 'border-destructive' : ''}
+                    className={`bg-transparent border-0 border-b border-[#444] rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary text-white placeholder:text-muted-foreground ${errors.fullName ? 'border-destructive' : ''}`}
                   />
                   {errors.fullName && <p className="text-xs text-destructive mt-1">{errors.fullName}</p>}
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone" className="text-sm text-muted-foreground">Phone Number</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -354,12 +355,12 @@ export default function Auth() {
                     }}
                     required
                     placeholder="+1 (555) 000-0000"
-                    className={errors.phone ? 'border-destructive' : ''}
+                    className={`bg-transparent border-0 border-b border-[#444] rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary text-white placeholder:text-muted-foreground ${errors.phone ? 'border-destructive' : ''}`}
                   />
                   {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
                 </div>
                 <div>
-                  <Label htmlFor="signupEmail">Email</Label>
+                  <Label htmlFor="signupEmail" className="text-sm text-muted-foreground">Email</Label>
                   <Input
                     id="signupEmail"
                     type="email"
@@ -369,13 +370,13 @@ export default function Auth() {
                       if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
                     }}
                     required
-                    placeholder="you@example.com"
-                    className={errors.email ? 'border-destructive' : ''}
+                    placeholder="name@example.com"
+                    className={`bg-transparent border-0 border-b border-[#444] rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary text-white placeholder:text-muted-foreground ${errors.email ? 'border-destructive' : ''}`}
                   />
                   {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
                 </div>
                 <div>
-                  <Label htmlFor="signupPassword">Password</Label>
+                  <Label htmlFor="signupPassword" className="text-sm text-muted-foreground">Password</Label>
                   <Input
                     id="signupPassword"
                     type="password"
@@ -386,7 +387,7 @@ export default function Auth() {
                     }}
                     required
                     placeholder="••••••••"
-                    className={errors.password ? 'border-destructive' : ''}
+                    className={`bg-transparent border-0 border-b border-[#444] rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary text-white placeholder:text-muted-foreground ${errors.password ? 'border-destructive' : ''}`}
                   />
                   {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
                   {!errors.password && (
@@ -395,43 +396,46 @@ export default function Auth() {
                     </p>
                   )}
                 </div>
-                <Button type="submit" className="w-full">Sign Up</Button>
+                <Button type="submit" className="w-full h-12 rounded-lg bg-[#6B2C2C] hover:bg-[#7d3434] text-white text-base font-medium">
+                  Create Account
+                </Button>
               </form>
 
               <button
                 type="button"
                 onClick={() => setAuthView('login')}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors w-full text-center mt-4"
+                className="text-sm text-muted-foreground hover:text-white transition-colors w-full text-center mt-6"
               >
-                Already have an account? Sign in
+                Already have an account? <span className="text-primary">Sign in</span>
               </button>
             </>
           )}
 
           {/* Forgot Password View */}
           {authView === 'forgot-password' && (
-            <form onSubmit={handleForgotPassword} className="space-y-4">
+            <form onSubmit={handleForgotPassword} className="space-y-6">
               <p className="text-sm text-muted-foreground text-center mb-4">
                 Enter your email and we'll send you a link to reset your password.
               </p>
               <div>
-                <Label htmlFor="resetEmail">Email</Label>
+                <Label htmlFor="resetEmail" className="text-sm text-muted-foreground">Email</Label>
                 <Input
                   id="resetEmail"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="you@example.com"
+                  placeholder="name@example.com"
+                  className="bg-transparent border-0 border-b border-[#444] rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary text-white placeholder:text-muted-foreground"
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button type="submit" className="w-full h-12 rounded-lg bg-[#6B2C2C] hover:bg-[#7d3434] text-white text-base font-medium" disabled={isSubmitting}>
                 {isSubmitting ? 'Sending...' : 'Send Reset Link'}
               </Button>
               <button
                 type="button"
                 onClick={() => setAuthView('login')}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors w-full text-center"
+                className="text-sm text-muted-foreground hover:text-white transition-colors w-full text-center"
               >
                 Back to Sign In
               </button>
@@ -440,28 +444,29 @@ export default function Auth() {
 
           {/* OTP Request View */}
           {authView === 'otp-request' && (
-            <form onSubmit={handleSendOTP} className="space-y-4">
+            <form onSubmit={handleSendOTP} className="space-y-6">
               <p className="text-sm text-muted-foreground text-center mb-4">
                 Enter your email and we'll send you a one-time code to sign in.
               </p>
               <div>
-                <Label htmlFor="otpEmail">Email</Label>
+                <Label htmlFor="otpEmail" className="text-sm text-muted-foreground">Email</Label>
                 <Input
                   id="otpEmail"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="you@example.com"
+                  placeholder="name@example.com"
+                  className="bg-transparent border-0 border-b border-[#444] rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary text-white placeholder:text-muted-foreground"
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button type="submit" className="w-full h-12 rounded-lg bg-[#6B2C2C] hover:bg-[#7d3434] text-white text-base font-medium" disabled={isSubmitting}>
                 {isSubmitting ? 'Sending...' : 'Send OTP'}
               </Button>
               <button
                 type="button"
                 onClick={() => setAuthView('login')}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors w-full text-center"
+                className="text-sm text-muted-foreground hover:text-white transition-colors w-full text-center"
               >
                 Back to Sign In
               </button>
@@ -470,7 +475,7 @@ export default function Auth() {
 
           {/* OTP Verify View */}
           {authView === 'otp-verify' && (
-            <form onSubmit={handleVerifyOTP} className="space-y-4">
+            <form onSubmit={handleVerifyOTP} className="space-y-6">
               <p className="text-sm text-muted-foreground text-center mb-4">
                 Enter the 6-digit code sent to {email}
               </p>
@@ -490,14 +495,14 @@ export default function Auth() {
                   </InputOTPGroup>
                 </InputOTP>
               </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting || otp.length !== 6}>
+              <Button type="submit" className="w-full h-12 rounded-lg bg-[#6B2C2C] hover:bg-[#7d3434] text-white text-base font-medium" disabled={isSubmitting || otp.length !== 6}>
                 {isSubmitting ? 'Verifying...' : 'Verify & Sign In'}
               </Button>
-              <div className="text-center space-y-2">
+              <div className="text-center space-y-3">
                 <button
                   type="button"
                   onClick={handleSendOTP}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  className="text-sm text-muted-foreground hover:text-white transition-colors"
                   disabled={isSubmitting}
                 >
                   Resend Code
@@ -508,7 +513,7 @@ export default function Auth() {
                     setOtp('');
                     setAuthView('otp-request');
                   }}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors w-full"
+                  className="text-sm text-muted-foreground hover:text-white transition-colors w-full"
                 >
                   Change Email
                 </button>
