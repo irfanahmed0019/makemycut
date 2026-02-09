@@ -32,6 +32,16 @@ const timeSlots = [
   '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM'
 ];
 
+// Convert 24h DB time (e.g. "17:00:00") to 12h display (e.g. "5:00 PM")
+const to12h = (t: string): string => {
+  const [hStr, mStr] = t.split(':');
+  let h = parseInt(hStr, 10);
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return `${h}:${mStr} ${suffix}`;
+};
+
 export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -42,6 +52,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [showGateModal, setShowGateModal] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
 
   // Capture install prompt
   useEffect(() => {
@@ -56,6 +67,31 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   useEffect(() => {
     fetchServices();
   }, [barber]);
+
+  // Fetch booked slots whenever date or barber changes
+  useEffect(() => {
+    fetchBookedSlots();
+  }, [selectedDate, barber]);
+
+  const fetchBookedSlots = async () => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const { data } = await supabase
+      .from('bookings')
+      .select('booking_time')
+      .eq('barber_id', barber.id)
+      .eq('booking_date', dateStr)
+      .in('status', ['upcoming', 'completed']);
+
+    if (data) {
+      const slots12h = data.map((b) => to12h(b.booking_time));
+      setBookedSlots(slots12h);
+      // Auto-select first available slot
+      const available = timeSlots.find((t) => !slots12h.includes(t));
+      if (available) setSelectedTime(available);
+    } else {
+      setBookedSlots([]);
+    }
+  };
 
   // Default services if none exist in database
   const defaultServices: Service[] = [
@@ -115,6 +151,27 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
 
     const service = services.find((s) => s.id === selectedService);
     if (!service) return;
+
+    // Check slot availability before inserting
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const { data: existing } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('barber_id', barber.id)
+      .eq('booking_date', dateStr)
+      .eq('booking_time', selectedTime)
+      .in('status', ['upcoming', 'completed'])
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Slot Unavailable',
+        description: 'This time slot has already been booked. Please select another.',
+      });
+      fetchBookedSlots();
+      return;
+    }
 
     const { data, error } = await supabase.from('bookings').insert({
       user_id: user.id,
@@ -274,17 +331,21 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
         Select Time <span className="text-sm font-normal text-muted-foreground">(15 min buffer)</span>
       </h2>
       <div className="grid grid-cols-2 gap-3 px-4">
-        {timeSlots.map((time) => (
-          <Button
-            key={time}
-            variant={selectedTime === time ? 'default' : 'outline'}
-            onClick={() => setSelectedTime(time)}
-            className="flex items-center justify-center gap-2"
-          >
-            <span className="material-symbols-outlined">schedule</span>
-            <span>{time}</span>
-          </Button>
-        ))}
+        {timeSlots.map((time) => {
+          const isBooked = bookedSlots.includes(time);
+          return (
+            <Button
+              key={time}
+              variant={selectedTime === time ? 'default' : 'outline'}
+              onClick={() => setSelectedTime(time)}
+              disabled={isBooked}
+              className="flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined">schedule</span>
+              <span>{time}</span>
+            </Button>
+          );
+        })}
       </div>
 
       <h2 className="text-lg font-bold px-4 pb-3 pt-6">Booking Summary</h2>
@@ -311,6 +372,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
           </div>
         </div>
       </div>
+
 
 
       <div className="px-4 py-3">
