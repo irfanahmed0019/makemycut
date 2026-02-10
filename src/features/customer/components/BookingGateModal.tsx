@@ -4,7 +4,7 @@ import { X, Smartphone } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import mmcLogoBlack from '@/assets/mmc-logo-black.png';
+import mmcBlockLogo from '@/assets/mmc-block-logo.png';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -129,7 +129,7 @@ export const BookingGateModal = ({
               <div className="flex justify-center mb-4">
                 <div className="w-16 h-16 flex items-center justify-center">
                   <img
-                    src={mmcLogoBlack}
+                    src={mmcBlockLogo}
                     alt="MakeMyCut"
                     className="w-14 h-14 object-contain"
                   />
