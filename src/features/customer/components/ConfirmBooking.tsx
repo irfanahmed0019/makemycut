@@ -187,11 +187,16 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     }).select();
 
     if (error) {
+      const isDuplicate = error.message?.includes('idx_bookings_unique_slot') || error.code === '23505';
       toast({
         variant: 'destructive',
-        title: 'Booking failed',
-        description: error.message,
+        title: isDuplicate ? 'Slot Unavailable' : 'Booking failed',
+        description: isDuplicate
+          ? 'Sorry, this time slot has already been booked.'
+          : error.message,
       });
+      if (isDuplicate) fetchBookedSlots();
+      return;
     } else if (data && data[0]) {
       const { data: bookingData } = await supabase
         .from('bookings')
