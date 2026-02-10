@@ -68,9 +68,11 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     fetchServices();
   }, [barber]);
 
-  // Fetch booked slots whenever date or barber changes
+  // Fetch booked slots whenever date or barber changes, poll every 10s
   useEffect(() => {
     fetchBookedSlots();
+    const interval = setInterval(fetchBookedSlots, 10000);
+    return () => clearInterval(interval);
   }, [selectedDate, barber]);
 
   const fetchBookedSlots = async () => {
