@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "app-icon.png"],
+      includeAssets: ["favicon.ico", "app-icon.png", "app-icon-192.png"],
       manifest: {
         name: "MakeMyCut",
         short_name: "MakeMyCut",
@@ -26,6 +26,12 @@ export default defineConfig(({ mode }) => ({
         orientation: "portrait",
         start_url: "/",
         icons: [
+          {
+            src: "/app-icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any maskable",
+          },
           {
             src: "/app-icon.png",
             sizes: "512x512",
