@@ -54,6 +54,10 @@ export const Bookings = () => {
       .eq('id', bookingId);
     
     if (!error) {
+      // Decrement trust score on cancellation
+      if (user) {
+        await supabase.rpc('decrement_trust_on_cancel', { p_user_id: user.id });
+      }
       fetchBookings();
     }
   };
