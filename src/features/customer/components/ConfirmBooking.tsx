@@ -224,6 +224,17 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
       return;
     }
 
+    // Check booking limit (max 2 active)
+    const { data: activeCount } = await supabase.rpc('count_active_bookings', { p_user_id: user.id });
+    if (activeCount !== null && activeCount >= 2) {
+      toast({
+        variant: 'destructive',
+        title: 'Booking Limit Reached',
+        description: 'You have reached the maximum of 2 active bookings.',
+      });
+      return;
+    }
+
     const service = services.find((s) => s.id === selectedService);
     if (!service) return;
 

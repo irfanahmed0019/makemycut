@@ -292,6 +292,15 @@ export type Database = {
         }
         Returns: string
       }
+      count_active_bookings: { Args: { p_user_id: string }; Returns: number }
+      decrement_trust_on_cancel: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
+      decrement_trust_on_noshow: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
