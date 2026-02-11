@@ -32,6 +32,13 @@ const timeSlots = [
   '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM'
 ];
 
+type SlotState = 'available' | 'hold' | 'booked';
+
+interface SlotInfo {
+  state: SlotState;
+  heldByMe: boolean;
+}
+
 // Convert 24h DB time (e.g. "17:00:00") to 12h display (e.g. "5:00 PM")
 const to12h = (t: string): string => {
   const [hStr, mStr] = t.split(':');
@@ -40,6 +47,16 @@ const to12h = (t: string): string => {
   if (h === 0) h = 12;
   else if (h > 12) h -= 12;
   return `${h}:${mStr} ${suffix}`;
+};
+
+// Convert 12h display (e.g. "5:00 PM") to 24h (e.g. "17:00")
+const to24h = (t: string): string => {
+  const [timePart, period] = t.split(' ');
+  const [hStr, mStr] = timePart.split(':');
+  let h = parseInt(hStr, 10);
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return `${h.toString().padStart(2, '0')}:${mStr}`;
 };
 
 export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProps) => {
@@ -52,7 +69,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [showGateModal, setShowGateModal] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [slotStates, setSlotStates] = useState<Record<string, SlotInfo>>({});
 
   // Capture install prompt
   useEffect(() => {
@@ -68,30 +85,89 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     fetchServices();
   }, [barber]);
 
-  // Fetch booked slots whenever date or barber changes, poll every 10s
+  // Fetch slot states periodically
   useEffect(() => {
-    fetchBookedSlots();
-    const interval = setInterval(fetchBookedSlots, 10000);
+    fetchSlotStates();
+    const interval = setInterval(fetchSlotStates, 10000);
     return () => clearInterval(interval);
   }, [selectedDate, barber]);
 
-  const fetchBookedSlots = async () => {
+  // Place hold when user selects a time slot
+  const handleSlotSelect = async (time: string) => {
+    setSelectedTime(time);
+    if (!user) return;
+
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    const { data } = await supabase
-      .from('bookings')
-      .select('booking_time')
+    const time24 = to24h(time);
+
+    // Remove any existing hold by this user for this barber+date
+    await supabase
+      .from('slot_holds')
+      .delete()
       .eq('barber_id', barber.id)
       .eq('booking_date', dateStr)
-      .in('status', ['upcoming', 'completed']);
+      .eq('user_id', user.id);
 
-    if (data) {
-      const slots12h = data.map((b) => to12h(b.booking_time));
-      setBookedSlots(slots12h);
-      // Auto-select first available slot
-      const available = timeSlots.find((t) => !slots12h.includes(t));
+    // Try to place a hold
+    await supabase.from('slot_holds').insert({
+      barber_id: barber.id,
+      booking_date: dateStr,
+      booking_time: time24,
+      user_id: user.id,
+    });
+
+    // Refresh states
+    fetchSlotStates();
+  };
+
+  const fetchSlotStates = async () => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+
+    // Clean expired holds
+    await supabase.rpc('clean_expired_holds');
+
+    const [bookingsRes, holdsRes] = await Promise.all([
+      supabase
+        .from('bookings')
+        .select('booking_time')
+        .eq('barber_id', barber.id)
+        .eq('booking_date', dateStr)
+        .in('status', ['upcoming', 'completed']),
+      supabase
+        .from('slot_holds')
+        .select('booking_time, user_id')
+        .eq('barber_id', barber.id)
+        .eq('booking_date', dateStr),
+    ]);
+
+    const states: Record<string, SlotInfo> = {};
+    timeSlots.forEach((t) => {
+      states[t] = { state: 'available', heldByMe: false };
+    });
+
+    if (bookingsRes.data) {
+      bookingsRes.data.forEach((b) => {
+        const t = to12h(b.booking_time);
+        if (states[t]) states[t] = { state: 'booked', heldByMe: false };
+      });
+    }
+
+    if (holdsRes.data) {
+      holdsRes.data.forEach((h) => {
+        const t = to12h(h.booking_time);
+        if (states[t] && states[t].state !== 'booked') {
+          states[t] = { state: 'hold', heldByMe: h.user_id === user?.id };
+        }
+      });
+    }
+
+    setSlotStates(states);
+
+    // Auto-select first available or my-hold slot if current is unavailable
+    const currentOk = states[selectedTime]?.state === 'available' || states[selectedTime]?.heldByMe;
+    if (!currentOk) {
+      const available = timeSlots.find((t) => states[t]?.state === 'available');
       if (available) setSelectedTime(available);
-    } else {
-      setBookedSlots([]);
     }
   };
 
@@ -112,7 +188,6 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
       setServices(data);
       setSelectedService(data[0].id);
     } else {
-      // Use default services if none found
       setServices(defaultServices);
       setSelectedService(defaultServices[0].id);
     }
@@ -120,11 +195,9 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
 
   const handleConfirmClick = () => {
     if (!user) {
-      // Show gate modal for unauthenticated users
       setShowGateModal(true);
       return;
     }
-    // User is logged in, proceed with booking
     processBooking();
   };
 
@@ -154,50 +227,32 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     const service = services.find((s) => s.id === selectedService);
     if (!service) return;
 
-    // Check slot availability before inserting
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    const { data: existing } = await supabase
-      .from('bookings')
-      .select('id')
-      .eq('barber_id', barber.id)
-      .eq('booking_date', dateStr)
-      .eq('booking_time', selectedTime)
-      .in('status', ['upcoming', 'completed'])
-      .limit(1);
+    const time24 = to24h(selectedTime);
 
-    if (existing && existing.length > 0) {
+    // Use atomic RPC to confirm from hold
+    const { data, error } = await supabase.rpc('confirm_booking_from_hold', {
+      p_barber_id: barber.id,
+      p_booking_date: dateStr,
+      p_booking_time: time24,
+      p_user_id: user.id,
+      p_service_id: selectedService,
+    });
+
+    // Always refresh slot states after attempt
+    await fetchSlotStates();
+
+    if (error) {
       toast({
         variant: 'destructive',
         title: 'Slot Unavailable',
-        description: 'This time slot has already been booked. Please select another.',
+        description: 'Sorry, this time slot has already been booked.',
       });
-      fetchBookedSlots();
       return;
     }
 
-    const { data, error } = await supabase.from('bookings').insert({
-      user_id: user.id,
-      barber_id: barber.id,
-      service_id: selectedService,
-      booking_date: format(selectedDate, 'yyyy-MM-dd'),
-      booking_time: selectedTime,
-      payment_method: 'pay_at_salon',
-      payment_status: 'pending',
-      status: 'upcoming',
-    }).select();
-
-    if (error) {
-      const isDuplicate = error.message?.includes('idx_bookings_unique_slot') || error.code === '23505';
-      toast({
-        variant: 'destructive',
-        title: isDuplicate ? 'Slot Unavailable' : 'Booking failed',
-        description: isDuplicate
-          ? 'Sorry, this time slot has already been booked.'
-          : error.message,
-      });
-      if (isDuplicate) fetchBookedSlots();
-      return;
-    } else if (data && data[0]) {
+    // data is the new booking id
+    if (data) {
       const { data: bookingData } = await supabase
         .from('bookings')
         .select(`
@@ -205,7 +260,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
           barbers (name),
           services (name, price)
         `)
-        .eq('id', data[0].id)
+        .eq('id', data)
         .single();
 
       if (bookingData) {
@@ -216,7 +271,6 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
 
   const handleGateSuccess = () => {
     setShowGateModal(false);
-    // User just logged in, process the booking
     processBooking();
   };
 
@@ -339,17 +393,38 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
       </h2>
       <div className="grid grid-cols-2 gap-3 px-4">
         {timeSlots.map((time) => {
-          const isBooked = bookedSlots.includes(time);
+          const info = slotStates[time] || { state: 'available', heldByMe: false };
+          const isBooked = info.state === 'booked';
+          const isHeldByOther = info.state === 'hold' && !info.heldByMe;
+          const isMyHold = info.state === 'hold' && info.heldByMe;
+          const isDisabled = isBooked || isHeldByOther;
+          const isSelected = selectedTime === time && !isDisabled;
+
+          let variant: 'default' | 'outline' | 'ghost' | 'secondary' = 'outline';
+          let extraClass = 'flex flex-col items-center justify-center gap-0.5';
+
+          if (isSelected || isMyHold) {
+            variant = 'default';
+          } else if (isBooked) {
+            extraClass += ' opacity-40 bg-muted text-muted-foreground';
+          } else if (isHeldByOther) {
+            extraClass += ' opacity-60 bg-amber-900/20 text-amber-200/70 border-amber-700/30';
+          }
+
           return (
             <Button
               key={time}
-              variant={selectedTime === time ? 'default' : 'outline'}
-              onClick={() => setSelectedTime(time)}
-              disabled={isBooked}
-              className="flex items-center justify-center gap-2"
+              variant={variant}
+              onClick={() => handleSlotSelect(time)}
+              disabled={isDisabled}
+              className={extraClass}
             >
-              <span className="material-symbols-outlined">schedule</span>
-              <span>{time}</span>
+              <span className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-base">schedule</span>
+                <span>{time}</span>
+              </span>
+              {isBooked && <span className="text-[10px] text-muted-foreground font-normal">Booked</span>}
+              {isHeldByOther && <span className="text-[10px] text-amber-400/70 font-normal">On hold</span>}
             </Button>
           );
         })}
@@ -379,8 +454,6 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
           </div>
         </div>
       </div>
-
-
 
       <div className="px-4 py-3">
         <Button onClick={handleConfirmClick} className="w-full h-14 text-lg font-bold">
