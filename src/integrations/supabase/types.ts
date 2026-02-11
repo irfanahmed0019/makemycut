@@ -217,6 +217,44 @@ export type Database = {
           },
         ]
       }
+      slot_holds: {
+        Row: {
+          barber_id: string
+          booking_date: string
+          booking_time: string
+          created_at: string
+          expires_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          barber_id: string
+          booking_date: string
+          booking_time: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          barber_id?: string
+          booking_date?: string
+          booking_time?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slot_holds_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -243,6 +281,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      clean_expired_holds: { Args: never; Returns: undefined }
+      confirm_booking_from_hold: {
+        Args: {
+          p_barber_id: string
+          p_booking_date: string
+          p_booking_time: string
+          p_service_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
