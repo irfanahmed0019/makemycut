@@ -40,24 +40,22 @@ export const Bookings = () => {
       .order('booking_date', { ascending: true });
 
     if (!error && data) {
-      const upcoming = data.filter((b) => b.status === 'upcoming');
-      const history = data.filter((b) => b.status !== 'upcoming');
+      const upcoming = data.filter((b) => b.status === 'upcoming' || b.status === 'CONFIRMED');
+      const history = data.filter((b) => b.status !== 'upcoming' && b.status !== 'CONFIRMED');
       setUpcomingBookings(upcoming);
       setHistoryBookings(history);
     }
   };
 
   const handleCancel = async (bookingId: string) => {
-    const { error } = await supabase
-      .from('bookings')
-      .update({ status: 'cancelled' })
-      .eq('id', bookingId);
+    if (!user) return;
+    
+    const { error } = await supabase.rpc('cancel_booking', {
+      p_booking_id: bookingId,
+      p_user_id: user.id,
+    });
     
     if (!error) {
-      // Decrement trust score on cancellation
-      if (user) {
-        await supabase.rpc('decrement_trust_on_cancel', { p_user_id: user.id });
-      }
       fetchBookings();
     }
   };

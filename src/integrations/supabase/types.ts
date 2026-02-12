@@ -62,6 +62,7 @@ export type Database = {
           booking_date: string
           booking_time: string
           created_at: string | null
+          expires_at: string | null
           id: string
           payment_method: string | null
           payment_status: string | null
@@ -76,6 +77,7 @@ export type Database = {
           booking_date: string
           booking_time: string
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           payment_method?: string | null
           payment_status?: string | null
@@ -90,6 +92,7 @@ export type Database = {
           booking_date?: string
           booking_time?: string
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           payment_method?: string | null
           payment_status?: string | null
@@ -281,6 +284,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_booking: {
+        Args: { p_booking_id: string; p_user_id: string }
+        Returns: boolean
+      }
       clean_expired_holds: { Args: never; Returns: undefined }
       confirm_booking_from_hold: {
         Args: {
@@ -291,6 +298,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      confirm_hold: {
+        Args: { p_booking_id: string; p_user_id: string }
+        Returns: boolean
       }
       count_active_bookings: { Args: { p_user_id: string }; Returns: number }
       decrement_trust_on_cancel: {
@@ -307,6 +318,16 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      place_hold: {
+        Args: {
+          p_barber_id: string
+          p_booking_date: string
+          p_booking_time: string
+          p_service_id: string
+          p_user_id: string
+        }
+        Returns: string
       }
     }
     Enums: {
