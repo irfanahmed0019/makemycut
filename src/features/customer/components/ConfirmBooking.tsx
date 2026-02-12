@@ -38,7 +38,6 @@ interface SlotInfo {
   state: SlotState;
   heldByMe: boolean;
 }
-
 // Convert 24h DB time (e.g. "17:00:00") to 12h display (e.g. "5:00 PM")
 const to12h = (t: string): string => {
   const [hStr, mStr] = t.split(':');
@@ -70,6 +69,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   const [showGateModal, setShowGateModal] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [slotStates, setSlotStates] = useState<Record<string, SlotInfo>>({});
+  const [holdBookingId, setHoldBookingId] = useState<string | null>(null);
 
   // Capture install prompt
   useEffect(() => {
@@ -95,75 +95,67 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   // Place hold when user selects a time slot
   const handleSlotSelect = async (time: string) => {
     setSelectedTime(time);
-    if (!user) return;
+    if (!user || !selectedService) return;
 
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const time24 = to24h(time);
 
-    // Remove any existing hold by this user for this barber+date
-    await supabase
-      .from('slot_holds')
-      .delete()
-      .eq('barber_id', barber.id)
-      .eq('booking_date', dateStr)
-      .eq('user_id', user.id);
-
-    // Try to place a hold
-    await supabase.from('slot_holds').insert({
-      barber_id: barber.id,
-      booking_date: dateStr,
-      booking_time: time24,
-      user_id: user.id,
+    const { data, error } = await supabase.rpc('place_hold', {
+      p_barber_id: barber.id,
+      p_booking_date: dateStr,
+      p_booking_time: time24,
+      p_user_id: user.id,
+      p_service_id: selectedService,
     });
 
-    // Refresh states
+    if (error) {
+      const msg = error.message || '';
+      if (msg.includes('BOOKING_LIMIT')) {
+        toast({ variant: 'destructive', title: 'Booking Limit Reached', description: 'You have reached the maximum of 2 active bookings.' });
+      } else if (msg.includes('SLOT_UNAVAILABLE')) {
+        toast({ variant: 'destructive', title: 'Slot Unavailable', description: 'Sorry, this time slot has already been booked.' });
+      }
+      setHoldBookingId(null);
+    } else {
+      setHoldBookingId(data);
+    }
+
     fetchSlotStates();
   };
 
   const fetchSlotStates = async () => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
-    // Clean expired holds
-    await supabase.rpc('clean_expired_holds');
-
-    const [bookingsRes, holdsRes] = await Promise.all([
-      supabase
-        .from('bookings')
-        .select('booking_time')
-        .eq('barber_id', barber.id)
-        .eq('booking_date', dateStr)
-        .in('status', ['upcoming', 'completed']),
-      supabase
-        .from('slot_holds')
-        .select('booking_time, user_id')
-        .eq('barber_id', barber.id)
-        .eq('booking_date', dateStr),
-    ]);
+    const { data: slotsData } = await supabase
+      .from('bookings')
+      .select('booking_time, status, user_id, expires_at')
+      .eq('barber_id', barber.id)
+      .eq('booking_date', dateStr)
+      .in('status', ['CONFIRMED', 'ON_HOLD']);
 
     const states: Record<string, SlotInfo> = {};
     timeSlots.forEach((t) => {
       states[t] = { state: 'available', heldByMe: false };
     });
 
-    if (bookingsRes.data) {
-      bookingsRes.data.forEach((b) => {
-        const t = to12h(b.booking_time);
-        if (states[t]) states[t] = { state: 'booked', heldByMe: false };
-      });
-    }
+    if (slotsData) {
+      slotsData.forEach((b) => {
+        // Skip expired holds
+        if (b.status === 'ON_HOLD' && b.expires_at && new Date(b.expires_at) < new Date()) return;
 
-    if (holdsRes.data) {
-      holdsRes.data.forEach((h) => {
-        const t = to12h(h.booking_time);
-        if (states[t] && states[t].state !== 'booked') {
-          states[t] = { state: 'hold', heldByMe: h.user_id === user?.id };
+        const t = to12h(b.booking_time);
+        if (!states[t]) return;
+
+        if (b.status === 'CONFIRMED') {
+          states[t] = { state: 'booked', heldByMe: false };
+        } else if (b.status === 'ON_HOLD') {
+          states[t] = { state: 'hold', heldByMe: b.user_id === user?.id };
         }
       });
     }
 
     setSlotStates(states);
 
-    // Auto-select first available or my-hold slot if current is unavailable
     const currentOk = states[selectedTime]?.state === 'available' || states[selectedTime]?.heldByMe;
     if (!currentOk) {
       const available = timeSlots.find((t) => states[t]?.state === 'available');
@@ -205,78 +197,53 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     if (!user) return;
 
     if (!selectedService) {
-      toast({
-        variant: 'destructive',
-        title: 'Missing Information',
-        description: 'Please select a service',
-      });
+      toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select a service' });
       return;
     }
 
     const today = startOfDay(new Date());
     const selectedDateStart = startOfDay(selectedDate);
     if (isBefore(selectedDateStart, today)) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid Date',
-        description: 'Cannot book appointments in the past. Please select today or a future date.',
-      });
+      toast({ variant: 'destructive', title: 'Invalid Date', description: 'Cannot book appointments in the past.' });
       return;
     }
 
-    // Check booking limit (max 2 active)
-    const { data: activeCount } = await supabase.rpc('count_active_bookings', { p_user_id: user.id });
-    if (activeCount !== null && activeCount >= 2) {
-      toast({
-        variant: 'destructive',
-        title: 'Booking Limit Reached',
-        description: 'You have reached the maximum of 2 active bookings.',
-      });
+    if (!holdBookingId) {
+      toast({ variant: 'destructive', title: 'No Hold', description: 'Please select a time slot first.' });
       return;
     }
 
-    const service = services.find((s) => s.id === selectedService);
-    if (!service) return;
-
-    const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    const time24 = to24h(selectedTime);
-
-    // Use atomic RPC to confirm from hold
-    const { data, error } = await supabase.rpc('confirm_booking_from_hold', {
-      p_barber_id: barber.id,
-      p_booking_date: dateStr,
-      p_booking_time: time24,
+    // Confirm the hold atomically
+    const { error } = await supabase.rpc('confirm_hold', {
+      p_booking_id: holdBookingId,
       p_user_id: user.id,
-      p_service_id: selectedService,
     });
 
-    // Always refresh slot states after attempt
+    // Always refresh slot states
     await fetchSlotStates();
 
     if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Slot Unavailable',
-        description: 'Sorry, this time slot has already been booked.',
-      });
+      const msg = error.message || '';
+      if (msg.includes('HOLD_EXPIRED')) {
+        toast({ variant: 'destructive', title: 'Slot Expired', description: 'Your hold has expired. Please select the slot again.' });
+      } else {
+        toast({ variant: 'destructive', title: 'Slot Unavailable', description: 'Sorry, this time slot has already been booked.' });
+      }
+      setHoldBookingId(null);
       return;
     }
 
-    // data is the new booking id
-    if (data) {
-      const { data: bookingData } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          barbers (name),
-          services (name, price)
-        `)
-        .eq('id', data)
-        .single();
+    // Fetch confirmed booking details
+    const { data: bookingData } = await supabase
+      .from('bookings')
+      .select(`*, barbers (name), services (name, price)`)
+      .eq('id', holdBookingId)
+      .single();
 
-      if (bookingData) {
-        onConfirm(bookingData);
-      }
+    setHoldBookingId(null);
+
+    if (bookingData) {
+      onConfirm(bookingData);
     }
   };
 
