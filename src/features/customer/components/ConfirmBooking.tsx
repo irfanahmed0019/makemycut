@@ -32,12 +32,6 @@ const timeSlots = [
   '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM'
 ];
 
-type SlotState = 'available' | 'hold' | 'booked';
-
-interface SlotInfo {
-  state: SlotState;
-  heldByMe: boolean;
-}
 // Convert 24h DB time (e.g. "17:00:00") to 12h display (e.g. "5:00 PM")
 const to12h = (t: string): string => {
   const [hStr, mStr] = t.split(':');
@@ -68,8 +62,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [showGateModal, setShowGateModal] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [slotStates, setSlotStates] = useState<Record<string, SlotInfo>>({});
-  const [holdBookingId, setHoldBookingId] = useState<string | null>(null);
+  const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
 
   // Capture install prompt
   useEffect(() => {
@@ -92,35 +85,8 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     return () => clearInterval(interval);
   }, [selectedDate, barber]);
 
-  // Place hold when user selects a time slot
-  const handleSlotSelect = async (time: string) => {
+  const handleSlotSelect = (time: string) => {
     setSelectedTime(time);
-    if (!user || !selectedService) return;
-
-    const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    const time24 = to24h(time);
-
-    const { data, error } = await supabase.rpc('place_hold', {
-      p_barber_id: barber.id,
-      p_booking_date: dateStr,
-      p_booking_time: time24,
-      p_user_id: user.id,
-      p_service_id: selectedService,
-    });
-
-    if (error) {
-      const msg = error.message || '';
-      if (msg.includes('BOOKING_LIMIT')) {
-        toast({ variant: 'destructive', title: 'Booking Limit Reached', description: 'You have reached the maximum of 2 active bookings.' });
-      } else if (msg.includes('SLOT_UNAVAILABLE')) {
-        toast({ variant: 'destructive', title: 'Slot Unavailable', description: 'Sorry, this time slot has already been booked.' });
-      }
-      setHoldBookingId(null);
-    } else {
-      setHoldBookingId(data);
-    }
-
-    fetchSlotStates();
   };
 
   const fetchSlotStates = async () => {
@@ -128,37 +94,21 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
 
     const { data: slotsData } = await supabase
       .from('bookings')
-      .select('booking_time, status, user_id, expires_at')
+      .select('booking_time')
       .eq('barber_id', barber.id)
       .eq('booking_date', dateStr)
-      .in('status', ['CONFIRMED', 'ON_HOLD']);
+      .eq('status', 'CONFIRMED');
 
-    const states: Record<string, SlotInfo> = {};
-    timeSlots.forEach((t) => {
-      states[t] = { state: 'available', heldByMe: false };
-    });
-
+    const booked = new Set<string>();
     if (slotsData) {
       slotsData.forEach((b) => {
-        // Skip expired holds
-        if (b.status === 'ON_HOLD' && b.expires_at && new Date(b.expires_at) < new Date()) return;
-
-        const t = to12h(b.booking_time);
-        if (!states[t]) return;
-
-        if (b.status === 'CONFIRMED') {
-          states[t] = { state: 'booked', heldByMe: false };
-        } else if (b.status === 'ON_HOLD') {
-          states[t] = { state: 'hold', heldByMe: b.user_id === user?.id };
-        }
+        booked.add(to12h(b.booking_time));
       });
     }
+    setBookedSlots(booked);
 
-    setSlotStates(states);
-
-    const currentOk = states[selectedTime]?.state === 'available' || states[selectedTime]?.heldByMe;
-    if (!currentOk) {
-      const available = timeSlots.find((t) => states[t]?.state === 'available');
+    if (booked.has(selectedTime)) {
+      const available = timeSlots.find((t) => !booked.has(t));
       if (available) setSelectedTime(available);
     }
   };
@@ -208,15 +158,16 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
       return;
     }
 
-    if (!holdBookingId) {
-      toast({ variant: 'destructive', title: 'No Hold', description: 'Please select a time slot first.' });
-      return;
-    }
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const time24 = to24h(selectedTime);
 
-    // Confirm the hold atomically
-    const { error } = await supabase.rpc('confirm_hold', {
-      p_booking_id: holdBookingId,
+    // Atomic: booking limit check + insert in one RPC
+    const { data, error } = await supabase.rpc('place_hold', {
+      p_barber_id: barber.id,
+      p_booking_date: dateStr,
+      p_booking_time: time24,
       p_user_id: user.id,
+      p_service_id: selectedService,
     });
 
     // Always refresh slot states
@@ -224,12 +175,11 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
 
     if (error) {
       const msg = error.message || '';
-      if (msg.includes('HOLD_EXPIRED')) {
-        toast({ variant: 'destructive', title: 'Slot Expired', description: 'Your hold has expired. Please select the slot again.' });
+      if (msg.includes('BOOKING_LIMIT')) {
+        toast({ variant: 'destructive', title: 'Booking Limit Reached', description: 'Maximum 2 active bookings allowed.' });
       } else {
         toast({ variant: 'destructive', title: 'Slot Unavailable', description: 'Sorry, this time slot has already been booked.' });
       }
-      setHoldBookingId(null);
       return;
     }
 
@@ -237,10 +187,8 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     const { data: bookingData } = await supabase
       .from('bookings')
       .select(`*, barbers (name), services (name, price)`)
-      .eq('id', holdBookingId)
+      .eq('id', data)
       .single();
-
-    setHoldBookingId(null);
 
     if (bookingData) {
       onConfirm(bookingData);
@@ -371,22 +319,16 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
       </h2>
       <div className="grid grid-cols-2 gap-3 px-4">
         {timeSlots.map((time) => {
-          const info = slotStates[time] || { state: 'available', heldByMe: false };
-          const isBooked = info.state === 'booked';
-          const isHeldByOther = info.state === 'hold' && !info.heldByMe;
-          const isMyHold = info.state === 'hold' && info.heldByMe;
-          const isDisabled = isBooked || isHeldByOther;
-          const isSelected = selectedTime === time && !isDisabled;
+          const isBooked = bookedSlots.has(time);
+          const isSelected = selectedTime === time && !isBooked;
 
           let variant: 'default' | 'outline' | 'ghost' | 'secondary' = 'outline';
           let extraClass = 'flex flex-col items-center justify-center gap-0.5';
 
-          if (isSelected || isMyHold) {
+          if (isSelected) {
             variant = 'default';
           } else if (isBooked) {
             extraClass += ' opacity-40 bg-muted text-muted-foreground';
-          } else if (isHeldByOther) {
-            extraClass += ' opacity-60 bg-amber-900/20 text-amber-200/70 border-amber-700/30';
           }
 
           return (
@@ -394,7 +336,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
               key={time}
               variant={variant}
               onClick={() => handleSlotSelect(time)}
-              disabled={isDisabled}
+              disabled={isBooked}
               className={extraClass}
             >
               <span className="flex items-center gap-1.5">
@@ -402,7 +344,6 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
                 <span>{time}</span>
               </span>
               {isBooked && <span className="text-[10px] text-muted-foreground font-normal">Booked</span>}
-              {isHeldByOther && <span className="text-[10px] text-amber-400/70 font-normal">On hold</span>}
             </Button>
           );
         })}
