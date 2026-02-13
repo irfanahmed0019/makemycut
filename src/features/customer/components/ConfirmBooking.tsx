@@ -97,7 +97,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
       .select('booking_time')
       .eq('barber_id', barber.id)
       .eq('booking_date', dateStr)
-      .eq('status', 'CONFIRMED');
+      .in('status', ['upcoming', 'completed']);
 
     const booked = new Set<string>();
     if (slotsData) {
