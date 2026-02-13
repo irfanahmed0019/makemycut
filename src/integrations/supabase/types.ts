@@ -319,16 +319,27 @@ export type Database = {
         }
         Returns: boolean
       }
-      place_hold: {
-        Args: {
-          p_barber_id: string
-          p_booking_date: string
-          p_booking_time: string
-          p_service_id: string
-          p_user_id: string
-        }
-        Returns: string
-      }
+      place_hold:
+        | {
+            Args: {
+              p_barber_id: string
+              p_booking_date: string
+              p_booking_time: string
+              p_service_id: string
+              p_user_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_barber_id: string
+              p_booking_date: string
+              p_booking_time: string
+              p_service_id: string
+              p_user_id: string
+            }
+            Returns: string
+          }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
