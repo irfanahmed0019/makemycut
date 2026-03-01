@@ -18,13 +18,14 @@ export default function SalonAuth() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isCheckingSalon, setIsCheckingSalon] = useState(false);
+  const [justSignedIn, setJustSignedIn] = useState(false);
   const { signIn, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     const checkSalonOwner = async () => {
-      if (user && !loading) {
+      if (user && !loading && justSignedIn) {
         setIsCheckingSalon(true);
         const { data: barber } = await supabase
           .from('barbers')
@@ -38,10 +39,11 @@ export default function SalonAuth() {
           toast({ variant: 'destructive', title: 'Access Denied', description: 'You are not registered as a salon owner.' });
         }
         setIsCheckingSalon(false);
+        setJustSignedIn(false);
       }
     };
     checkSalonOwner();
-  }, [user, loading, navigate, toast]);
+  }, [user, loading, justSignedIn, navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +51,9 @@ export default function SalonAuth() {
     try {
       const validatedData = signInSchema.parse({ email, password });
       const { error } = await signIn(validatedData.email, validatedData.password);
-      if (error) {
+      if (!error) {
+        setJustSignedIn(true);
+      } else {
         toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
       }
     } catch (error) {
