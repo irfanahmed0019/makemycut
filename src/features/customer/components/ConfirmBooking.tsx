@@ -161,37 +161,37 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const time24 = to24h(selectedTime);
 
-    // Atomic: booking limit check + insert in one RPC
-    const { data, error } = await supabase.rpc('place_hold', {
-      p_barber_id: barber.id,
-      p_booking_date: dateStr,
-      p_booking_time: time24,
-      p_user_id: user.id,
-      p_service_id: selectedService,
+    // Server-side validated booking via edge function
+    const { data: fnResponse, error: fnError } = await supabase.functions.invoke('create-booking', {
+      body: {
+        barber_id: barber.id,
+        booking_date: dateStr,
+        booking_time: time24,
+        service_id: selectedService,
+      },
     });
+
+    const data = fnResponse?.booking?.id;
+    const error = fnError || (fnResponse?.error ? { message: fnResponse.error } : null);
 
     // Always refresh slot states
     await fetchSlotStates();
 
     if (error) {
-      const msg = error.message || '';
-      if (msg.includes('BOOKING_LIMIT')) {
+      const msg = typeof error === 'string' ? error : error?.message || '';
+      if (msg.includes('BOOKING_LIMIT') || msg.includes('Maximum 2')) {
         toast({ variant: 'destructive', title: 'Booking Limit Reached', description: 'Maximum 2 active bookings allowed.' });
+      } else if (msg.includes('Rate limit')) {
+        toast({ variant: 'destructive', title: 'Too Many Requests', description: 'Please wait before booking again.' });
       } else {
         toast({ variant: 'destructive', title: 'Slot Unavailable', description: 'Sorry, this time slot has already been booked.' });
       }
       return;
     }
 
-    // Fetch confirmed booking details
-    const { data: bookingData } = await supabase
-      .from('bookings')
-      .select(`*, barbers (name), services (name, price)`)
-      .eq('id', data)
-      .single();
-
-    if (bookingData) {
-      onConfirm(bookingData);
+    // Use the full booking object from edge function response
+    if (fnResponse?.booking) {
+      onConfirm(fnResponse.booking);
     }
   };
 
