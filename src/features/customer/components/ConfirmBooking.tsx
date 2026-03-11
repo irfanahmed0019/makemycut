@@ -161,14 +161,18 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const time24 = to24h(selectedTime);
 
-    // Atomic: booking limit check + insert in one RPC
-    const { data, error } = await supabase.rpc('place_hold', {
-      p_barber_id: barber.id,
-      p_booking_date: dateStr,
-      p_booking_time: time24,
-      p_user_id: user.id,
-      p_service_id: selectedService,
+    // Server-side validated booking via edge function
+    const { data: fnResponse, error: fnError } = await supabase.functions.invoke('create-booking', {
+      body: {
+        barber_id: barber.id,
+        booking_date: dateStr,
+        booking_time: time24,
+        service_id: selectedService,
+      },
     });
+
+    const data = fnResponse?.booking?.id;
+    const error = fnError || (fnResponse?.error ? { message: fnResponse.error } : null);
 
     // Always refresh slot states
     await fetchSlotStates();
