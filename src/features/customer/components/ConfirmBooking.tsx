@@ -178,24 +178,20 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     await fetchSlotStates();
 
     if (error) {
-      const msg = error.message || '';
-      if (msg.includes('BOOKING_LIMIT')) {
+      const msg = typeof error === 'string' ? error : error?.message || '';
+      if (msg.includes('BOOKING_LIMIT') || msg.includes('Maximum 2')) {
         toast({ variant: 'destructive', title: 'Booking Limit Reached', description: 'Maximum 2 active bookings allowed.' });
+      } else if (msg.includes('Rate limit')) {
+        toast({ variant: 'destructive', title: 'Too Many Requests', description: 'Please wait before booking again.' });
       } else {
         toast({ variant: 'destructive', title: 'Slot Unavailable', description: 'Sorry, this time slot has already been booked.' });
       }
       return;
     }
 
-    // Fetch confirmed booking details
-    const { data: bookingData } = await supabase
-      .from('bookings')
-      .select(`*, barbers (name), services (name, price)`)
-      .eq('id', data)
-      .single();
-
-    if (bookingData) {
-      onConfirm(bookingData);
+    // Use the full booking object from edge function response
+    if (fnResponse?.booking) {
+      onConfirm(fnResponse.booking);
     }
   };
 
