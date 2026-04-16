@@ -152,6 +152,66 @@ export type Database = {
         }
         Relationships: []
       }
+      queues: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          id: string
+          joined_at: string
+          queue_position: number
+          salon_id: string
+          served_at: string | null
+          service_id: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_phone: string
+          id?: string
+          joined_at?: string
+          queue_position: number
+          salon_id: string
+          served_at?: string | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          joined_at?: string
+          queue_position?: number
+          salon_id?: string
+          served_at?: string | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "queues_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "queues_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           barber_id: string
@@ -182,32 +242,88 @@ export type Database = {
         }
         Relationships: []
       }
+      salon_settings: {
+        Row: {
+          booking_enabled: boolean
+          close_time: string
+          created_at: string
+          open_time: string
+          queue_enabled: boolean
+          queue_paused: boolean
+          salon_id: string
+          slot_duration: number
+          updated_at: string
+          wait_per_customer: number
+        }
+        Insert: {
+          booking_enabled?: boolean
+          close_time?: string
+          created_at?: string
+          open_time?: string
+          queue_enabled?: boolean
+          queue_paused?: boolean
+          salon_id: string
+          slot_duration?: number
+          updated_at?: string
+          wait_per_customer?: number
+        }
+        Update: {
+          booking_enabled?: boolean
+          close_time?: string
+          created_at?: string
+          open_time?: string
+          queue_enabled?: boolean
+          queue_paused?: boolean
+          salon_id?: string
+          slot_duration?: number
+          updated_at?: string
+          wait_per_customer?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salon_settings_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: true
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       services: {
         Row: {
           barber_id: string | null
           created_at: string | null
+          created_by: string | null
           description: string | null
           duration_minutes: number
           id: string
+          is_active: boolean | null
           name: string
+          order_index: number | null
           price: number
         }
         Insert: {
           barber_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           duration_minutes: number
           id?: string
+          is_active?: boolean | null
           name: string
+          order_index?: number | null
           price: number
         }
         Update: {
           barber_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           duration_minutes?: number
           id?: string
+          is_active?: boolean | null
           name?: string
+          order_index?: number | null
           price?: number
         }
         Relationships: [
@@ -312,11 +428,30 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      get_next_queue_position: { Args: { p_salon_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      join_queue: {
+        Args: {
+          p_customer_name: string
+          p_customer_phone: string
+          p_salon_id: string
+          p_service_id: string
+          p_user_id?: string
+        }
+        Returns: {
+          estimated_wait: number
+          queue_id: string
+          queue_pos: number
+        }[]
+      }
+      mark_queue_served: {
+        Args: { p_owner_id: string; p_queue_id: string }
         Returns: boolean
       }
       place_hold: {

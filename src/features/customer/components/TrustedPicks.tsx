@@ -14,21 +14,23 @@ interface Barber {
 
 interface TrustedPicksProps {
   onBookNow: (barber: Barber) => void;
+  onViewSalon?: (barber: Barber) => void;
+  onJoinQueue?: (barber: Barber) => void;
 }
 
-export const TrustedPicks = ({ onBookNow }: TrustedPicksProps) => {
+export const TrustedPicks = ({ onBookNow, onViewSalon, onJoinQueue }: TrustedPicksProps) => {
   const [salons, setSalons] = useState<Barber[]>([]);
+  const [settings, setSettings] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchSalons = async () => {
-      const { data, error } = await supabase
-        .from('barbers')
-        .select('id, name, description, image_url, rating, review_count, address')
-        .order('rating', { ascending: false })
-        .limit(10);
+      const [{ data }, { data: settingsData }] = await Promise.all([
+        supabase.from('barbers').select('id, name, description, image_url, rating, review_count, address').order('rating', { ascending: false }).limit(10),
+        supabase.from('salon_settings').select('*'),
+      ]);
 
-      if (!error && data) {
+      if (data) {
         setSalons(data.map(salon => ({
           id: salon.id,
           name: salon.name,
@@ -39,37 +41,57 @@ export const TrustedPicks = ({ onBookNow }: TrustedPicksProps) => {
           address: salon.address || undefined,
         })));
       }
+
+      const map: Record<string, any> = {};
+      settingsData?.forEach((s: any) => { map[s.salon_id] = s; });
+      setSettings(map);
       setIsLoading(false);
     };
-
     fetchSalons();
   }, []);
-  const renderBarberCard = (barber: Barber) => (
-    <div key={barber.id} className="flex items-start gap-4 p-4 rounded-lg bg-card">
-      <div className="flex-1 space-y-3">
-        <div className="space-y-1">
-          <p className="text-base font-bold text-card-foreground">{barber.name}</p>
-          <p className="text-foreground text-sm">{barber.description}</p>
-          {barber.address && (
-            <p className="text-muted-foreground text-sm">
-              Location: {barber.address}
-            </p>
+
+  const renderBarberCard = (barber: Barber) => {
+    const s = settings[barber.id];
+    const bookingEnabled = s?.booking_enabled !== false;
+    const queueEnabled = s?.queue_enabled !== false;
+
+    return (
+      <div key={barber.id} className="flex flex-col gap-3 p-4 rounded-lg bg-card">
+        <div className="flex items-start gap-4">
+          <div className="flex-1 space-y-1">
+            <p className="text-base font-bold text-card-foreground">{barber.name}</p>
+            <p className="text-foreground text-sm">{barber.description}</p>
+            {barber.address && <p className="text-muted-foreground text-sm">📍 {barber.address}</p>}
+            <div className="flex items-center gap-1 text-sm">
+              <span className="material-symbols-outlined text-primary text-base">star</span>
+              <span>{barber.rating}</span>
+              <span className="text-muted-foreground">({barber.review_count})</span>
+            </div>
+          </div>
+          <img alt={barber.name} className="w-28 h-28 object-cover rounded-lg" src={barber.image_url} />
+        </div>
+        <div className="flex gap-2">
+          {bookingEnabled && (
+            <Button onClick={() => onBookNow(barber)} className="flex-1" size="sm">
+              <span className="material-symbols-outlined mr-1 text-base">calendar_month</span>
+              Book
+            </Button>
+          )}
+          {queueEnabled && onJoinQueue && (
+            <Button onClick={() => onJoinQueue(barber)} variant="outline" className="flex-1 border-primary text-primary" size="sm">
+              <span className="material-symbols-outlined mr-1 text-base">group</span>
+              Join Queue
+            </Button>
+          )}
+          {onViewSalon && (
+            <Button onClick={() => onViewSalon(barber)} variant="ghost" size="sm">
+              <span className="material-symbols-outlined text-base">info</span>
+            </Button>
           )}
         </div>
-        <Button
-          onClick={() => onBookNow(barber)}
-          className="bg-primary text-primary-foreground"
-        >
-          Book Now
-        </Button>
       </div>
-      <img
-        alt={barber.name}
-        className="w-28 h-28 object-cover rounded-lg"
-        src={barber.image_url}
-      />
-    </div>
-  );
+    );
+  };
 
   if (isLoading) {
     return (
@@ -88,9 +110,7 @@ export const TrustedPicks = ({ onBookNow }: TrustedPicksProps) => {
       <div className="space-y-8">
         <div>
           <h3 className="text-xl font-bold mb-4">Featured Salons</h3>
-          <div className="space-y-4">
-            {salons.map(renderBarberCard)}
-          </div>
+          <div className="space-y-4">{salons.map(renderBarberCard)}</div>
         </div>
       </div>
     </section>
