@@ -78,6 +78,12 @@ const CustomerHome = () => {
     setActiveSection('queue-status');
   };
 
+  const handleOpenQueueStatus = (queue: { queueId: string; position: number; estimatedWait: number; salonId: string; salonName: string }) => {
+    setSelectedBarber({ id: queue.salonId, name: queue.salonName });
+    setQueueData({ queueId: queue.queueId, position: queue.position, estimatedWait: queue.estimatedWait });
+    setActiveSection('queue-status');
+  };
+
   const handleProtectedSection = (section: string) => {
     if (!user && (section === 'bookings' || section === 'profile')) {
       setPendingSection(section);
@@ -111,7 +117,7 @@ const CustomerHome = () => {
       </header>
 
       <main className="flex-grow px-4 pb-20 overflow-y-auto">
-        {activeSection === 'bookings' && user && <Bookings />}
+        {activeSection === 'bookings' && user && <Bookings onOpenQueueStatus={handleOpenQueueStatus} />}
         {activeSection === 'bookings' && !user && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <span className="material-symbols-outlined text-6xl text-muted-foreground mb-4">calendar_month</span>
