@@ -397,7 +397,48 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      queue_public: {
+        Row: {
+          id: string | null
+          joined_at: string | null
+          queue_position: number | null
+          salon_id: string | null
+          service_id: string | null
+          status: string | null
+        }
+        Insert: {
+          id?: string | null
+          joined_at?: string | null
+          queue_position?: number | null
+          salon_id?: string | null
+          service_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          id?: string | null
+          joined_at?: string | null
+          queue_position?: number | null
+          salon_id?: string | null
+          service_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "queues_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "queues_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       cancel_booking: {
@@ -449,6 +490,10 @@ export type Database = {
           queue_id: string
           queue_pos: number
         }[]
+      }
+      leave_queue: {
+        Args: { p_queue_id: string; p_user_id: string }
+        Returns: boolean
       }
       mark_queue_served: {
         Args: { p_owner_id: string; p_queue_id: string }
