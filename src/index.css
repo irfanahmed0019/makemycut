@@ -10,14 +10,21 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* MakeMyCut brand colors - HSL values */
-    --brand-red: 359 58% 39%;
-    --brand-red-hover: 359 58% 43%;
-    --near-black: 0 0% 4%;
-    --dark-surface: 0 0% 7%;
-    --divider: 0 0% 12%;
+    /* MakeMyCut brand colors - premium dark palette */
+    --brand-red: 359 70% 48%;
+    --brand-red-hover: 359 75% 55%;
+    --brand-red-glow: 359 80% 60%;
+    --near-black: 0 0% 0%;
+    --dark-surface: 0 0% 4%;
+    --dark-surface-2: 0 0% 7%;
+    --divider: 0 0% 11%;
     --text-primary: 0 0% 100%;
-    --text-muted: 0 0% 63%;
+    --text-muted: 0 0% 65%;
+
+    --gradient-premium: linear-gradient(135deg, hsl(0 0% 6%) 0%, hsl(0 0% 3%) 100%);
+    --gradient-red: linear-gradient(135deg, hsl(var(--brand-red)) 0%, hsl(var(--brand-red-glow)) 100%);
+    --shadow-premium: 0 8px 32px -8px hsl(0 0% 0% / 0.6), 0 0 0 1px hsl(0 0% 100% / 0.04);
+    --shadow-red-glow: 0 0 40px -10px hsl(var(--brand-red) / 0.5);
     
     --background: var(--near-black);
     --foreground: var(--text-primary);
@@ -109,6 +116,27 @@ All colors MUST be HSL.
     font-family: 'Poppins', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background:
+      radial-gradient(ellipse at top, hsl(359 70% 12% / 0.15), transparent 60%),
+      hsl(var(--background));
+    min-height: 100vh;
+  }
+
+  .premium-card {
+    background: var(--gradient-premium);
+    box-shadow: var(--shadow-premium);
+    border: 1px solid hsl(0 0% 100% / 0.05);
+    border-radius: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .premium-card:hover {
+    border-color: hsl(0 0% 100% / 0.1);
+    transform: translateY(-1px);
+  }
+
+  .red-glow {
+    box-shadow: var(--shadow-red-glow);
   }
 
   .font-display {
