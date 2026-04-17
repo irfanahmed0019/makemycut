@@ -22,23 +22,93 @@ export const JoinQueue = ({ salon, onJoined, onBack }: JoinQueueProps) => {
   const [selectedService, setSelectedService] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const getExistingQueue = async () => {
+    if (!user) return null;
+
+    const { data: activeQueues, error } = await supabase
+      .from('queues')
+      .select('id, queue_position, salon_id, joined_at')
+      .eq('user_id', user.id)
+      .eq('salon_id', salon.id)
+      .in('status', ['waiting', 'serving'])
+      .order('queue_position', { ascending: true })
+      .order('joined_at', { ascending: true });
+
+    if (error || !activeQueues?.length) return null;
+
+    const existingQueue = activeQueues[0];
+
+    if (activeQueues.length > 1) {
+      await supabase
+        .from('queues')
+        .update({ status: 'removed', updated_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+        .eq('salon_id', salon.id)
+        .in('status', ['waiting', 'serving'])
+        .neq('id', existingQueue.id);
+    }
+
+    const [{ count: aheadCount }, { data: settings }] = await Promise.all([
+      supabase
+        .from('queues')
+        .select('id', { count: 'exact', head: true })
+        .eq('salon_id', salon.id)
+        .in('status', ['waiting', 'serving'])
+        .lt('queue_position', existingQueue.queue_position),
+      supabase.from('salon_settings').select('wait_per_customer').eq('salon_id', salon.id).maybeSingle(),
+    ]);
+
+    return {
+      queueId: existingQueue.id,
+      position: existingQueue.queue_position,
+      estimatedWait: (aheadCount || 0) * (settings?.wait_per_customer || 20),
+    };
+  };
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return;
-      const { data } = await supabase.from('profiles').select('full_name, phone').eq('id', user.id).maybeSingle();
-      if (data) {
-        setName(data.full_name || '');
-        setPhone(data.phone || '');
+    let isMounted = true;
+
+    const loadInitialState = async () => {
+      const profilePromise = user
+        ? supabase.from('profiles').select('full_name, phone').eq('id', user.id).maybeSingle()
+        : Promise.resolve({ data: null });
+      const servicesPromise = supabase
+        .from('services')
+        .select('*')
+        .eq('barber_id', salon.id)
+        .eq('is_active', true)
+        .order('order_index');
+      const existingQueuePromise = user ? getExistingQueue() : Promise.resolve(null);
+
+      const [{ data: profile }, { data: serviceRows }, existingQueue] = await Promise.all([
+        profilePromise,
+        servicesPromise,
+        existingQueuePromise,
+      ]);
+
+      if (!isMounted) return;
+
+      if (profile) {
+        setName(profile.full_name || '');
+        setPhone(profile.phone || '');
+      }
+
+      setServices(serviceRows || []);
+      if (serviceRows && serviceRows.length > 0) {
+        setSelectedService((current) => current || serviceRows[0].id);
+      }
+
+      if (existingQueue) {
+        onJoined(existingQueue.queueId, existingQueue.position, existingQueue.estimatedWait);
       }
     };
-    const fetchServices = async () => {
-      const { data } = await supabase.from('services').select('*').eq('barber_id', salon.id).eq('is_active', true).order('order_index');
-      setServices(data || []);
-      if (data && data.length > 0) setSelectedService(data[0].id);
+
+    loadInitialState();
+
+    return () => {
+      isMounted = false;
     };
-    fetchProfile();
-    fetchServices();
-  }, [salon.id, user]);
+  }, [salon.id, user?.id]);
 
   const handleJoin = async () => {
     if (!name.trim() || !phone.trim()) {
@@ -51,6 +121,15 @@ export const JoinQueue = ({ salon, onJoined, onBack }: JoinQueueProps) => {
     }
 
     setIsSubmitting(true);
+
+    const existingQueue = await getExistingQueue();
+    if (existingQueue) {
+      setIsSubmitting(false);
+      toast({ title: 'Already in queue', description: 'Showing your current queue status.' });
+      onJoined(existingQueue.queueId, existingQueue.position, existingQueue.estimatedWait);
+      return;
+    }
+
     const { data, error } = await supabase.rpc('join_queue', {
       p_salon_id: salon.id,
       p_customer_name: name.trim(),

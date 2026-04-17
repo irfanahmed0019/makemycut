@@ -82,7 +82,19 @@ export const QueueStatus = ({ queueId, salonName, initialPosition, initialWait, 
   const handleLeave = async () => {
     if (!user) return;
     setLeaving(true);
-    const { error } = await supabase.rpc('leave_queue', { p_queue_id: queueId, p_user_id: user.id });
+
+    let updateQuery = supabase
+      .from('queues')
+      .update({ status: 'removed', updated_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .in('status', ['waiting', 'serving']);
+
+    if (salonId) {
+      updateQuery = updateQuery.eq('salon_id', salonId);
+    }
+
+    const { error } = await updateQuery;
+
     setLeaving(false);
     if (error) {
       toast({ variant: 'destructive', title: 'Could not leave queue', description: error.message });
@@ -130,7 +142,7 @@ export const QueueStatus = ({ queueId, salonName, initialPosition, initialWait, 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-secondary/40 border border-border rounded-xl p-4">
                     <p className="text-muted-foreground text-xs uppercase tracking-wider">People Ahead</p>
-                    <p className="text-2xl font-bold mt-1">{position - 1}</p>
+                    <p className="text-2xl font-bold mt-1">{Math.max(position - 1, 0)}</p>
                   </div>
                   <div className="bg-secondary/40 border border-border rounded-xl p-4">
                     <p className="text-muted-foreground text-xs uppercase tracking-wider">Est. Wait</p>

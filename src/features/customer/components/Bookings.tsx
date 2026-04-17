@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -26,13 +27,29 @@ interface ActiveQueue {
   estimated_wait: number;
 }
 
-export const Bookings = () => {
+interface QueueListItem {
+  position: number;
+  name: string;
+  isMe: boolean;
+}
+
+interface BookingsProps {
+  onOpenQueueStatus?: (queue: { queueId: string; position: number; estimatedWait: number; salonId: string; salonName: string }) => void;
+}
+
+export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [historyBookings, setHistoryBookings] = useState<Booking[]>([]);
   const [activeQueue, setActiveQueue] = useState<ActiveQueue | null>(null);
-  const [tick, setTick] = useState(0);
+  const [queueList, setQueueList] = useState<QueueListItem[]>([]);
+  const [showQueueList, setShowQueueList] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const maskName = (name: string) => {
+    if (!name) return 'Customer';
+    return name.trim().split(' ')[0] || 'Customer';
+  };
 
   useEffect(() => {
     if (user) {
@@ -41,13 +58,6 @@ export const Bookings = () => {
     }
   }, [user]);
 
-  // Live countdown tick every minute
-  useEffect(() => {
-    const i = setInterval(() => setTick(t => t + 1), 60000);
-    return () => clearInterval(i);
-  }, []);
-
-  // Refresh queue periodically
   useEffect(() => {
     if (!user) return;
     const i = setInterval(fetchActiveQueue, 30000);
@@ -77,26 +87,49 @@ export const Bookings = () => {
 
   const fetchActiveQueue = async () => {
     if (!user) return;
-    const { data: q } = await supabase
+
+    const { data: activeQueues } = await supabase
       .from('queues')
-      .select('id, queue_position, status, salon_id')
+      .select('id, queue_position, status, salon_id, joined_at')
       .eq('user_id', user.id)
       .in('status', ['waiting', 'serving'])
-      .order('joined_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .order('queue_position', { ascending: true })
+      .order('joined_at', { ascending: true });
 
-    if (!q) { setActiveQueue(null); return; }
+    if (!activeQueues?.length) {
+      setActiveQueue(null);
+      setQueueList([]);
+      return;
+    }
 
-    const [{ data: salon }, { count: aheadCount }, { data: settings }] = await Promise.all([
+    const q = activeQueues[0];
+
+    if (activeQueues.length > 1) {
+      await supabase
+        .from('queues')
+        .update({ status: 'removed', updated_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+        .eq('salon_id', q.salon_id)
+        .in('status', ['waiting', 'serving'])
+        .neq('id', q.id);
+    }
+
+    const [{ data: salon }, { count: aheadCount }, { data: settings }, { data: queueRows }] = await Promise.all([
       supabase.from('barbers').select('name').eq('id', q.salon_id).maybeSingle(),
       supabase.from('queues').select('id', { count: 'exact', head: true })
         .eq('salon_id', q.salon_id).in('status', ['waiting', 'serving']).lt('queue_position', q.queue_position),
       supabase.from('salon_settings').select('wait_per_customer').eq('salon_id', q.salon_id).maybeSingle(),
+      supabase.from('queues').select('id, queue_position, customer_name').eq('salon_id', q.salon_id).in('status', ['waiting', 'serving']).order('queue_position', { ascending: true }),
     ]);
 
     const ahead = aheadCount || 0;
     const waitPer = settings?.wait_per_customer || 20;
+
+    setQueueList((queueRows || []).map((row) => ({
+      position: row.queue_position,
+      name: maskName(row.customer_name),
+      isMe: row.id === q.id,
+    })));
 
     setActiveQueue({
       id: q.id,
@@ -131,21 +164,29 @@ export const Bookings = () => {
 
   const handleLeaveQueue = async () => {
     if (!user || !activeQueue) return;
-    const { error } = await supabase.rpc('leave_queue', { p_queue_id: activeQueue.id, p_user_id: user.id });
+
+    const { error } = await supabase
+      .from('queues')
+      .update({ status: 'removed', updated_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .eq('salon_id', activeQueue.salon_id)
+      .in('status', ['waiting', 'serving']);
+
     if (error) {
       toast({ variant: 'destructive', title: 'Could not leave', description: error.message });
       return;
     }
+
     toast({ title: 'You left the queue' });
     setActiveQueue(null);
+    setQueueList([]);
+    setShowQueueList(false);
   };
 
   return (
     <section className="pt-4">
       <h2 className="text-2xl font-bold mb-4 text-center font-display">My Bookings</h2>
       <div className="space-y-8">
-
-        {/* Active Queue Card */}
         {activeQueue && (
           <div className="premium-card p-5 ring-1 ring-primary/40 red-glow">
             <div className="flex items-center justify-between mb-3">
@@ -168,6 +209,29 @@ export const Bookings = () => {
                 <p className="text-xs text-muted-foreground">Wait</p>
                 <p className="text-2xl font-bold">{activeQueue.estimated_wait}<span className="text-xs font-normal">m</span></p>
               </div>
+            </div>
+            <div className={onOpenQueueStatus ? 'grid grid-cols-2 gap-3 mb-3' : 'mb-3'}>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => setShowQueueList(true)}>
+                <span className="material-symbols-outlined mr-2 text-base">groups</span>
+                View Queue
+              </Button>
+              {onOpenQueueStatus && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => onOpenQueueStatus({
+                    queueId: activeQueue.id,
+                    position: activeQueue.queue_position,
+                    estimatedWait: activeQueue.estimated_wait,
+                    salonId: activeQueue.salon_id,
+                    salonName: activeQueue.salon_name,
+                  })}
+                >
+                  <span className="material-symbols-outlined mr-2 text-base">visibility</span>
+                  Open Status
+                </Button>
+              )}
             </div>
             <Button variant="destructive" size="sm" className="w-full" onClick={handleLeaveQueue}>
               <span className="material-symbols-outlined mr-2 text-base">logout</span>
@@ -256,6 +320,24 @@ export const Bookings = () => {
           </div>
         )}
       </div>
+
+      <Dialog open={showQueueList} onOpenChange={setShowQueueList}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">Current Queue</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 mt-2 max-h-80 overflow-y-auto">
+            {queueList.length === 0 && <p className="text-muted-foreground text-center py-4">No one in queue</p>}
+            {queueList.map((person) => (
+              <div key={person.position} className={`flex items-center gap-3 p-3 rounded-lg border ${person.isMe ? 'bg-primary/10 border-primary' : 'bg-secondary/40 border-border'}`}>
+                <span className="font-bold text-primary w-8">{person.position}.</span>
+                <span className="flex-1">{person.name}</span>
+                {person.isMe && <span className="text-xs text-primary font-semibold uppercase">You</span>}
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };
