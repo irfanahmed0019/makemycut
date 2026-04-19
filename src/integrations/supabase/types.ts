@@ -469,6 +469,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      expire_stale_queue_entries: { Args: never; Returns: undefined }
       get_next_queue_position: { Args: { p_salon_id: string }; Returns: number }
       get_queue_status: {
         Args: { p_salon_id: string; p_user_id: string }

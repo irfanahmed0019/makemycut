@@ -30,6 +30,10 @@ export const QueueStatus = ({ queueId, salonName, initialPosition, initialWait, 
   const maskName = (n: string) => n?.trim().split(' ')[0] || 'Customer';
 
   const fetchStatus = async () => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayIso = todayStart.toISOString();
+
     // Authoritative entry by id
     const { data: entry } = await supabase
       .from('queues')
@@ -48,6 +52,7 @@ export const QueueStatus = ({ queueId, salonName, initialPosition, initialWait, 
       .select('id, queue_position, customer_name')
       .eq('salon_id', entry.salon_id)
       .in('status', ['waiting', 'serving'])
+      .gte('joined_at', todayIso)
       .order('queue_position', { ascending: true });
 
     const list = (rows || []).map(r => ({
