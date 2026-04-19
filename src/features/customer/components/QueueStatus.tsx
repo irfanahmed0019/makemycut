@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -25,25 +25,28 @@ export const QueueStatus = ({ queueId, salonName, initialPosition, initialWait, 
   const [queueList, setQueueList] = useState<{ position: number; name: string; isMe: boolean }[]>([]);
   const [showList, setShowList] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const leaveLockRef = useRef(false);
 
-  const maskName = (n: string) => {
-    if (!n) return 'Customer';
-    const parts = n.trim().split(' ');
-    return parts[0] || 'Customer';
-  };
+  const maskName = (n: string) => n?.trim().split(' ')[0] || 'Customer';
 
   const fetchStatus = async () => {
-    const { data } = await supabase.from('queues').select('queue_position, status, salon_id').eq('id', queueId).maybeSingle();
-    if (!data) return;
+    // Authoritative entry by id
+    const { data: entry } = await supabase
+      .from('queues')
+      .select('queue_position, status, salon_id')
+      .eq('id', queueId)
+      .maybeSingle();
+    if (!entry) return;
 
-    setStatus(data.status);
-    setSalonId(data.salon_id);
-    if (data.status !== 'waiting' && data.status !== 'serving') return;
+    setStatus(entry.status);
+    setSalonId(entry.salon_id);
+
+    if (entry.status !== 'waiting' && entry.status !== 'serving') return;
 
     const { data: rows } = await supabase
       .from('queues')
       .select('id, queue_position, customer_name')
-      .eq('salon_id', data.salon_id)
+      .eq('salon_id', entry.salon_id)
       .in('status', ['waiting', 'serving'])
       .order('queue_position', { ascending: true });
 
@@ -54,48 +57,47 @@ export const QueueStatus = ({ queueId, salonName, initialPosition, initialWait, 
     }));
     setQueueList(list);
 
-    const ahead = (rows || []).filter(r => r.queue_position < data.queue_position).length;
-    setPosition(data.queue_position);
+    const ahead = (rows || []).filter(r => r.queue_position < entry.queue_position).length;
+    setPosition(entry.queue_position);
 
-    const { data: settings } = await supabase.from('salon_settings').select('wait_per_customer').eq('salon_id', data.salon_id).maybeSingle();
-    const waitPer = settings?.wait_per_customer || 20;
-    setEstimatedWait(ahead * waitPer);
+    const { data: settings } = await supabase
+      .from('salon_settings').select('wait_per_customer').eq('salon_id', entry.salon_id).maybeSingle();
+    setEstimatedWait(ahead * (settings?.wait_per_customer || 20));
     setLastRefresh(new Date());
   };
 
   useEffect(() => {
     fetchStatus();
     const interval = setInterval(fetchStatus, 30000);
-    return () => clearInterval(interval);
+    const onVis = () => { if (!document.hidden) fetchStatus(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, [queueId]);
 
   useEffect(() => {
     const channel = supabase
       .channel(`queue-${queueId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'queues' }, () => {
-        fetchStatus();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'queues' }, () => fetchStatus())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [queueId]);
 
   const handleLeave = async () => {
-    if (!user) return;
+    if (!user || leaveLockRef.current || leaving) return;
+    leaveLockRef.current = true;
     setLeaving(true);
 
-    let updateQuery = supabase
-      .from('queues')
-      .update({ status: 'removed', updated_at: new Date().toISOString() })
-      .eq('user_id', user.id)
-      .in('status', ['waiting', 'serving']);
-
-    if (salonId) {
-      updateQuery = updateQuery.eq('salon_id', salonId);
-    }
-
-    const { error } = await updateQuery;
+    const { error } = await supabase.rpc('leave_queue', {
+      p_queue_id: queueId,
+      p_user_id: user.id,
+    });
 
     setLeaving(false);
+    leaveLockRef.current = false;
+
     if (error) {
       toast({ variant: 'destructive', title: 'Could not leave queue', description: error.message });
       return;
