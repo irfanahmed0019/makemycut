@@ -101,11 +101,17 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
   const fetchActiveQueue = async () => {
     if (!user) return;
 
+    // Today's start (local) → ISO for filtering against joined_at
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayIso = todayStart.toISOString();
+
     const { data: activeQueues } = await supabase
       .from('queues')
       .select('id, queue_position, status, salon_id, joined_at')
       .eq('user_id', user.id)
       .in('status', ['waiting', 'serving'])
+      .gte('joined_at', todayIso)
       .order('queue_position', { ascending: true })
       .order('joined_at', { ascending: true });
 
@@ -117,22 +123,12 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
 
     const q = activeQueues[0];
 
-    if (activeQueues.length > 1) {
-      await supabase
-        .from('queues')
-        .update({ status: 'removed', updated_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .eq('salon_id', q.salon_id)
-        .in('status', ['waiting', 'serving'])
-        .neq('id', q.id);
-    }
-
     const [{ data: salon }, { count: aheadCount }, { data: settings }, { data: queueRows }] = await Promise.all([
       supabase.from('barbers').select('name').eq('id', q.salon_id).maybeSingle(),
       supabase.from('queues').select('id', { count: 'exact', head: true })
-        .eq('salon_id', q.salon_id).in('status', ['waiting', 'serving']).lt('queue_position', q.queue_position),
+        .eq('salon_id', q.salon_id).in('status', ['waiting', 'serving']).gte('joined_at', todayIso).lt('queue_position', q.queue_position),
       supabase.from('salon_settings').select('wait_per_customer').eq('salon_id', q.salon_id).maybeSingle(),
-      supabase.from('queues').select('id, queue_position, customer_name').eq('salon_id', q.salon_id).in('status', ['waiting', 'serving']).order('queue_position', { ascending: true }),
+      supabase.from('queues').select('id, queue_position, customer_name').eq('salon_id', q.salon_id).in('status', ['waiting', 'serving']).gte('joined_at', todayIso).order('queue_position', { ascending: true }),
     ]);
 
     const ahead = aheadCount || 0;
