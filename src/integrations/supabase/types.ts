@@ -470,6 +470,17 @@ export type Database = {
         Returns: undefined
       }
       get_next_queue_position: { Args: { p_salon_id: string }; Returns: number }
+      get_queue_status: {
+        Args: { p_salon_id: string; p_user_id: string }
+        Returns: {
+          estimated_wait: number
+          in_queue: boolean
+          people_ahead: number
+          queue_id: string
+          queue_length: number
+          queue_pos: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

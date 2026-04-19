@@ -60,8 +60,21 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
 
   useEffect(() => {
     if (!user) return;
-    const i = setInterval(fetchActiveQueue, 30000);
-    return () => clearInterval(i);
+    const interval = setInterval(fetchActiveQueue, 30000);
+    const onVis = () => { if (!document.hidden) fetchActiveQueue(); };
+    document.addEventListener('visibilitychange', onVis);
+
+    // Realtime: any change to queues for this user invalidates state
+    const channel = supabase
+      .channel(`bookings-queue-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'queues', filter: `user_id=eq.${user.id}` }, () => fetchActiveQueue())
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVis);
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const fetchBookings = async () => {
@@ -165,12 +178,10 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
   const handleLeaveQueue = async () => {
     if (!user || !activeQueue) return;
 
-    const { error } = await supabase
-      .from('queues')
-      .update({ status: 'removed', updated_at: new Date().toISOString() })
-      .eq('user_id', user.id)
-      .eq('salon_id', activeQueue.salon_id)
-      .in('status', ['waiting', 'serving']);
+    const { error } = await supabase.rpc('leave_queue', {
+      p_queue_id: activeQueue.id,
+      p_user_id: user.id,
+    });
 
     if (error) {
       toast({ variant: 'destructive', title: 'Could not leave', description: error.message });
@@ -181,6 +192,7 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
     setActiveQueue(null);
     setQueueList([]);
     setShowQueueList(false);
+    fetchActiveQueue();
   };
 
   return (
