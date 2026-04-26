@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { AreaSearchBar } from '@/features/directory/components/AreaSearchBar';
+import { TrustSection } from '@/features/directory/components/TrustSection';
+import { FaqSection } from '@/features/directory/components/FaqSection';
 
 interface Barber {
   id: string;
@@ -106,12 +109,17 @@ export const TrustedPicks = ({ onBookNow, onViewSalon, onJoinQueue }: TrustedPic
 
   return (
     <section className="pt-4">
-      <h2 className="text-2xl font-bold mb-4 text-center">Home</h2>
+      <div className="mb-6">
+        <AreaSearchBar />
+        <p className="text-[13px] text-muted-foreground mt-3 text-center">Showing salons near you</p>
+      </div>
       <div className="space-y-8">
         <div>
           <h3 className="text-xl font-bold mb-4">Featured Salons</h3>
           <div className="space-y-4">{salons.map(renderBarberCard)}</div>
         </div>
+        <TrustSection />
+        <FaqSection />
       </div>
     </section>
   );
