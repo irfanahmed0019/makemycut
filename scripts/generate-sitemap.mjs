@@ -46,6 +46,7 @@ function urlEntry(loc, priority, changefreq) {
 const main = async () => {
   const rows = await fetchAreas();
   const seenDistricts = new Set();
+  const seenAreas = new Set();
   const districtUrls = [];
   const areaUrls = [];
 
@@ -55,7 +56,11 @@ const main = async () => {
       seenDistricts.add(row.district);
       districtUrls.push(urlEntry(`${SITE}/salons/${row.district}`, '0.8', 'weekly'));
     }
-    areaUrls.push(urlEntry(`${SITE}/salons/${row.district}/${row.area}`, '0.7', 'weekly'));
+    const areaKey = `${row.district}/${row.area}`;
+    if (!seenAreas.has(areaKey)) {
+      seenAreas.add(areaKey);
+      areaUrls.push(urlEntry(`${SITE}/salons/${row.district}/${row.area}`, '0.7', 'weekly'));
+    }
   }
 
   const staticUrls = STATIC_ROUTES.map((r) => urlEntry(`${SITE}${r.path}`, r.priority, r.changefreq));
