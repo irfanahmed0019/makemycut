@@ -9,6 +9,9 @@ import { BookingGateModal } from '@/features/customer/components/BookingGateModa
 import { JoinQueue } from '@/features/customer/components/JoinQueue';
 import { QueueStatus } from '@/features/customer/components/QueueStatus';
 import { SalonDetail } from '@/features/customer/components/SalonDetail';
+import { AreaSearchBar } from '@/features/directory/components/AreaSearchBar';
+import { consumePendingAction } from '@/features/directory/lib/pendingAction';
+import { useSearchParams } from 'react-router-dom';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -24,12 +27,37 @@ const CustomerHome = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [queueData, setQueueData] = useState<{ queueId: string; position: number; estimatedWait: number } | null>(null);
   const { user, loading } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     const handler = (e: Event) => { e.preventDefault(); setDeferredPrompt(e as BeforeInstallPromptEvent); };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
+
+  // Handle directory → home handoff: pick up pending Book/Join Queue from sessionStorage
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action !== 'book' && action !== 'queue') return;
+    const pending = consumePendingAction();
+    setSearchParams({}, { replace: true });
+    if (!pending) return;
+    const salonForFlow = {
+      id: pending.salon.id,
+      name: pending.salon.name,
+      description: '',
+      image_url: pending.salon.image_url ?? '',
+      rating: 0,
+      review_count: 0,
+      address: pending.salon.address ?? undefined,
+    };
+    if (pending.action === 'book') {
+      handleBookNow(salonForFlow);
+    } else {
+      handleJoinQueue(salonForFlow);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleBookNow = (barber: any) => {
     if (!user) {
