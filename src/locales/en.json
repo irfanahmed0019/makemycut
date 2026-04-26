@@ -1,0 +1,19 @@
+{
+  "nav.home": "Home",
+  "nav.bookings": "Bookings",
+  "nav.profile": "Profile",
+  "hero.heading": "Find and Book Top Salons Near You",
+  "hero.subtext": "Skip the wait. Book instantly or join the queue.",
+  "search.placeholder": "Search area (e.g., Attingal, Kollam)",
+  "search.empty": "No matching areas found. Try Attingal, Kollam, or Trivandrum.",
+  "card.book": "Book",
+  "card.joinQueue": "Join Queue",
+  "trust.heading": "Why MakeMyCut",
+  "trust.noWaiting.title": "No Waiting",
+  "trust.noWaiting.detail": "Join the queue from your phone before you arrive.",
+  "trust.instant.title": "Instant Booking",
+  "trust.instant.detail": "Choose a time slot and confirm in under 10 seconds.",
+  "trust.verified.title": "Verified Salons",
+  "trust.verified.detail": "Every salon on MakeMyCut is manually reviewed.",
+  "faq.heading": "Frequently Asked Questions"
+}

@@ -1,0 +1,19 @@
+{
+  "nav.home": "होम",
+  "nav.bookings": "बुकिंग",
+  "nav.profile": "प्रोफ़ाइल",
+  "hero.heading": "अपने पास के बेहतरीन सैलून खोजें और बुक करें",
+  "hero.subtext": "इंतज़ार छोड़ें। तुरंत बुक करें या क्यू में जुड़ें।",
+  "search.placeholder": "क्षेत्र खोजें (जैसे, अट्टिंगल, कोल्लम)",
+  "search.empty": "कोई मेल खाने वाला क्षेत्र नहीं। अट्टिंगल, कोल्लम, या तिरुवनंतपुरम आज़माएँ।",
+  "card.book": "बुक करें",
+  "card.joinQueue": "क्यू में जुड़ें",
+  "trust.heading": "MakeMyCut क्यों",
+  "trust.noWaiting.title": "कोई इंतज़ार नहीं",
+  "trust.noWaiting.detail": "पहुँचने से पहले अपने फ़ोन से क्यू में जुड़ें।",
+  "trust.instant.title": "तुरंत बुकिंग",
+  "trust.instant.detail": "एक समय स्लॉट चुनें और 10 सेकंड में पुष्टि करें।",
+  "trust.verified.title": "सत्यापित सैलून",
+  "trust.verified.detail": "MakeMyCut पर हर सैलून की मैन्युअल समीक्षा की जाती है।",
+  "faq.heading": "अक्सर पूछे जाने वाले प्रश्न"
+}

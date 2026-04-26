@@ -17,41 +17,59 @@ export type Database = {
       barbers: {
         Row: {
           address: string | null
+          area: string | null
+          badge_type: string | null
           created_at: string | null
           description: string | null
           distance_km: number | null
+          district: string | null
           id: string
           image_url: string | null
+          is_deleted: boolean
+          is_verified: boolean
           name: string
           owner_id: string | null
           rating: number | null
           review_count: number | null
+          status_tag: string | null
           updated_at: string | null
         }
         Insert: {
           address?: string | null
+          area?: string | null
+          badge_type?: string | null
           created_at?: string | null
           description?: string | null
           distance_km?: number | null
+          district?: string | null
           id?: string
           image_url?: string | null
+          is_deleted?: boolean
+          is_verified?: boolean
           name: string
           owner_id?: string | null
           rating?: number | null
           review_count?: number | null
+          status_tag?: string | null
           updated_at?: string | null
         }
         Update: {
           address?: string | null
+          area?: string | null
+          badge_type?: string | null
           created_at?: string | null
           description?: string | null
           distance_km?: number | null
+          district?: string | null
           id?: string
           image_url?: string | null
+          is_deleted?: boolean
+          is_verified?: boolean
           name?: string
           owner_id?: string | null
           rating?: number | null
           review_count?: number | null
+          status_tag?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -507,10 +525,18 @@ export type Database = {
         Args: { p_queue_id: string; p_user_id: string }
         Returns: boolean
       }
+      list_area_index: {
+        Args: never
+        Returns: {
+          area: string
+          district: string
+        }[]
+      }
       mark_queue_served: {
         Args: { p_owner_id: string; p_queue_id: string }
         Returns: boolean
       }
+      normalize_slug: { Args: { val: string }; Returns: string }
       place_hold: {
         Args: {
           p_barber_id: string
@@ -521,6 +547,15 @@ export type Database = {
         }
         Returns: string
       }
+      search_areas: {
+        Args: { p_query: string }
+        Returns: {
+          area: string
+          district: string
+        }[]
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
