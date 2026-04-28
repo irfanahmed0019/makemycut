@@ -78,11 +78,21 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     fetchServices();
   }, [barber]);
 
-  // Fetch slot states periodically
+  // Fetch slot states + realtime subscription to bookings changes
   useEffect(() => {
     fetchSlotStates();
-    const interval = setInterval(fetchSlotStates, 10000);
-    return () => clearInterval(interval);
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const channel = supabase
+      .channel(`slots-${barber.id}-${dateStr}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings', filter: `barber_id=eq.${barber.id}` },
+        () => fetchSlotStates()
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [selectedDate, barber]);
 
   const handleSlotSelect = (time: string) => {
