@@ -28,22 +28,37 @@ export const OCCUPYING_STATUSES = ['upcoming', 'CONFIRMED', 'ON_HOLD', 'pending'
  * Fetches the set of booked slots (12h display strings) for a given barber/date.
  * Optionally excludes a specific booking id (used during reschedule so the
  * booking being moved doesn't mark its own current slot as taken).
+ *
+ * Uses a SECURITY DEFINER RPC so it can see bookings from ALL users, not just
+ * the current user's (RLS restricts SELECT on bookings to the owner).
  */
 export const fetchBookedSlots = async (
   barberId: string,
   dateStr: string,
   excludeBookingId?: string
 ): Promise<Set<string>> => {
-  const { data } = await supabase
-    .from('bookings')
-    .select('id, booking_time')
-    .eq('barber_id', barberId)
-    .eq('booking_date', dateStr)
-    .in('status', OCCUPYING_STATUSES);
+  const { data, error } = await (supabase as any).rpc('get_occupied_slots', {
+    p_barber_id: barberId,
+    p_booking_date: dateStr,
+  });
 
   const booked = new Set<string>();
-  (data || []).forEach((b: any) => {
-    if (excludeBookingId && b.id === excludeBookingId) return;
+  if (error || !data) return booked;
+
+  // If excluding a booking id, also fetch that booking's time so we can remove
+  // it from the occupied set (the RPC doesn't know which booking to exclude).
+  let excludeTime: string | null = null;
+  if (excludeBookingId) {
+    const { data: own } = await supabase
+      .from('bookings')
+      .select('booking_time')
+      .eq('id', excludeBookingId)
+      .maybeSingle();
+    if (own?.booking_time) excludeTime = own.booking_time;
+  }
+
+  (data as Array<{ booking_time: string }>).forEach((b) => {
+    if (excludeTime && b.booking_time === excludeTime) return;
     booked.add(to12h(b.booking_time));
   });
   return booked;
@@ -60,20 +75,12 @@ export const isSlotTaken = async (
   time24WithSeconds: string,
   excludeBookingId?: string
 ): Promise<boolean> => {
-  let query = supabase
-    .from('bookings')
-    .select('id')
-    .eq('barber_id', barberId)
-    .eq('booking_date', dateStr)
-    .eq('booking_time', time24WithSeconds)
-    .in('status', OCCUPYING_STATUSES)
-    .limit(1);
-
-  if (excludeBookingId) {
-    query = query.neq('id', excludeBookingId);
-  }
-
-  const { data, error } = await query;
+  const { data, error } = await (supabase as any).rpc('is_slot_occupied', {
+    p_barber_id: barberId,
+    p_booking_date: dateStr,
+    p_booking_time: time24WithSeconds,
+    p_exclude_booking_id: excludeBookingId ?? null,
+  });
   if (error) return false;
-  return (data?.length || 0) > 0;
+  return data === true;
 };
