@@ -203,6 +203,14 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const booked = await fetchBookedSlots(booking.barber_id, dateStr, booking.id);
     setReschedBooked(booked);
+    // If the currently-selected time just became unavailable (e.g. another
+    // customer grabbed it in realtime), auto-move selection to the first
+    // free slot so the user can't submit an invalid choice.
+    setReschedTime((prev) => {
+      if (!booked.has(prev)) return prev;
+      const firstFree = timeSlots.find((t) => !booked.has(t));
+      return firstFree ?? prev;
+    });
   };
 
   const openReschedule = (booking: Booking) => {
