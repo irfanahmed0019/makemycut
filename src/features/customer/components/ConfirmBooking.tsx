@@ -5,6 +5,7 @@ import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameD
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookingGateModal } from './BookingGateModal';
+import { fetchBookedSlots, to24h } from '../lib/slotAvailability';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -31,26 +32,6 @@ const timeSlots = [
   '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM',
   '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM'
 ];
-
-// Convert 24h DB time (e.g. "17:00:00") to 12h display (e.g. "5:00 PM")
-const to12h = (t: string): string => {
-  const [hStr, mStr] = t.split(':');
-  let h = parseInt(hStr, 10);
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  if (h === 0) h = 12;
-  else if (h > 12) h -= 12;
-  return `${h}:${mStr} ${suffix}`;
-};
-
-// Convert 12h display (e.g. "5:00 PM") to 24h (e.g. "17:00")
-const to24h = (t: string): string => {
-  const [timePart, period] = t.split(' ');
-  const [hStr, mStr] = timePart.split(':');
-  let h = parseInt(hStr, 10);
-  if (period === 'PM' && h !== 12) h += 12;
-  if (period === 'AM' && h === 12) h = 0;
-  return `${h.toString().padStart(2, '0')}:${mStr}`;
-};
 
 export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProps) => {
   const { toast } = useToast();
@@ -101,20 +82,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
 
   const fetchSlotStates = async () => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
-
-    const { data: slotsData } = await supabase
-      .from('bookings')
-      .select('booking_time')
-      .eq('barber_id', barber.id)
-      .eq('booking_date', dateStr)
-      .in('status', ['upcoming', 'completed']);
-
-    const booked = new Set<string>();
-    if (slotsData) {
-      slotsData.forEach((b) => {
-        booked.add(to12h(b.booking_time));
-      });
-    }
+    const booked = await fetchBookedSlots(barber.id, dateStr);
     setBookedSlots(booked);
 
     if (booked.has(selectedTime)) {

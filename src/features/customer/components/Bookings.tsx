@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { fetchBookedSlots, isSlotTaken, to12h, to24h } from '../lib/slotAvailability';
 
 interface Booking {
   id: string;
@@ -44,23 +45,6 @@ const timeSlots = [
   '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM',
   '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM'
 ];
-
-const to12h = (t: string): string => {
-  const [hStr, mStr] = t.split(':');
-  let h = parseInt(hStr, 10);
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  if (h === 0) h = 12; else if (h > 12) h -= 12;
-  return `${h}:${mStr} ${suffix}`;
-};
-
-const to24h = (t: string): string => {
-  const [timePart, period] = t.split(' ');
-  const [hStr, mStr] = timePart.split(':');
-  let h = parseInt(hStr, 10);
-  if (period === 'PM' && h !== 12) h += 12;
-  if (period === 'AM' && h === 12) h = 0;
-  return `${h.toString().padStart(2, '0')}:${mStr}`;
-};
 
 export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
@@ -217,16 +201,7 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
   const fetchReschedSlots = async (booking: Booking, date: Date) => {
     if (!booking.barber_id) return;
     const dateStr = format(date, 'yyyy-MM-dd');
-    const { data } = await supabase
-      .from('bookings')
-      .select('id, booking_time')
-      .eq('barber_id', booking.barber_id)
-      .eq('booking_date', dateStr)
-      .in('status', ['upcoming', 'CONFIRMED', 'completed']);
-    const booked = new Set<string>();
-    (data || []).forEach((b: any) => {
-      if (b.id !== booking.id) booked.add(to12h(b.booking_time));
-    });
+    const booked = await fetchBookedSlots(booking.barber_id, dateStr, booking.id);
     setReschedBooked(booked);
   };
 
@@ -258,9 +233,26 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
 
   const handleReschedule = async () => {
     if (!rescheduleTarget || !user) return;
+    if (!rescheduleTarget.barber_id) return;
     setRescheduling(true);
     const dateStr = format(reschedDate, 'yyyy-MM-dd');
     const time24 = to24h(reschedTime) + ':00';
+
+    // Pre-flight: check if the target slot is already taken before writing.
+    // This prevents unique-constraint errors from bubbling up to the UI.
+    const taken = await isSlotTaken(rescheduleTarget.barber_id, dateStr, time24, rescheduleTarget.id);
+    if (taken) {
+      setRescheduling(false);
+      toast({
+        variant: 'destructive',
+        title: 'Slot unavailable',
+        description: 'That time was just booked by someone else. Please pick another slot.',
+      });
+      // Refresh the reschedule modal's slot state so the UI reflects reality
+      fetchReschedSlots(rescheduleTarget, reschedDate);
+      return;
+    }
+
     const { error } = await supabase
       .from('bookings')
       .update({ booking_date: dateStr, booking_time: time24, updated_at: new Date().toISOString() })
@@ -268,7 +260,20 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
       .eq('user_id', user.id);
     setRescheduling(false);
     if (error) {
-      toast({ variant: 'destructive', title: 'Could not reschedule', description: error.message });
+      // Fallback: if a concurrent booking slipped in between the pre-flight
+      // check and the UPDATE, translate the unique-constraint violation into
+      // a friendly message instead of showing the raw DB error.
+      const isUniqueViolation =
+        (error as any).code === '23505' ||
+        /idx_bookings_unique_slot|duplicate key/i.test(error.message || '');
+      toast({
+        variant: 'destructive',
+        title: isUniqueViolation ? 'Slot unavailable' : 'Could not reschedule',
+        description: isUniqueViolation
+          ? 'That time was just booked by someone else. Please pick another slot.'
+          : error.message,
+      });
+      if (rescheduleTarget) fetchReschedSlots(rescheduleTarget, reschedDate);
       return;
     }
     toast({ title: 'Booking rescheduled', description: `${format(reschedDate, 'MMM dd, yyyy')} at ${reschedTime}` });
