@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isBefore, startOfDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Booking {
   id: string;
+  barber_id?: string;
   booking_date: string;
   booking_time: string;
   status: string;
@@ -37,12 +38,44 @@ interface BookingsProps {
   onOpenQueueStatus?: (queue: { queueId: string; position: number; estimatedWait: number; salonId: string; salonName: string }) => void;
 }
 
+const timeSlots = [
+  '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+  '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM',
+  '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM',
+  '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM'
+];
+
+const to12h = (t: string): string => {
+  const [hStr, mStr] = t.split(':');
+  let h = parseInt(hStr, 10);
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  if (h === 0) h = 12; else if (h > 12) h -= 12;
+  return `${h}:${mStr} ${suffix}`;
+};
+
+const to24h = (t: string): string => {
+  const [timePart, period] = t.split(' ');
+  const [hStr, mStr] = timePart.split(':');
+  let h = parseInt(hStr, 10);
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return `${h.toString().padStart(2, '0')}:${mStr}`;
+};
+
 export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [historyBookings, setHistoryBookings] = useState<Booking[]>([]);
   const [activeQueue, setActiveQueue] = useState<ActiveQueue | null>(null);
   const [queueList, setQueueList] = useState<QueueListItem[]>([]);
   const [showQueueList, setShowQueueList] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [rescheduleTarget, setRescheduleTarget] = useState<Booking | null>(null);
+  const [reschedDate, setReschedDate] = useState<Date>(new Date());
+  const [reschedMonth, setReschedMonth] = useState<Date>(new Date());
+  const [reschedTime, setReschedTime] = useState<string>('10:00 AM');
+  const [reschedBooked, setReschedBooked] = useState<Set<string>>(new Set());
+  const [rescheduling, setRescheduling] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -70,10 +103,17 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'queues', filter: `user_id=eq.${user.id}` }, () => fetchActiveQueue())
       .subscribe();
 
+    // Realtime: bookings changes for this user (cancellations, reschedules)
+    const bookingsChannel = supabase
+      .channel(`bookings-user-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `user_id=eq.${user.id}` }, () => fetchBookings())
+      .subscribe();
+
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVis);
       supabase.removeChannel(channel);
+      supabase.removeChannel(bookingsChannel);
     };
   }, [user]);
 
@@ -153,12 +193,14 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
 
   const handleCancel = async (bookingId: string) => {
     if (!user) return;
+    setCancelling(true);
 
     const { data, error } = await supabase.rpc('cancel_booking', {
       p_booking_id: bookingId,
       p_user_id: user.id,
     });
 
+    setCancelling(false);
     if (error) {
       toast({ variant: 'destructive', title: 'Could not cancel', description: error.message });
       return;
@@ -167,7 +209,70 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
       toast({ variant: 'destructive', title: 'Could not cancel', description: 'Booking is no longer cancellable.' });
       return;
     }
-    toast({ title: 'Booking cancelled' });
+    toast({ title: 'Booking cancelled.', description: 'The slot is now available for others.' });
+    setCancelTarget(null);
+    fetchBookings();
+  };
+
+  const fetchReschedSlots = async (booking: Booking, date: Date) => {
+    if (!booking.barber_id) return;
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const { data } = await supabase
+      .from('bookings')
+      .select('id, booking_time')
+      .eq('barber_id', booking.barber_id)
+      .eq('booking_date', dateStr)
+      .in('status', ['upcoming', 'CONFIRMED', 'completed']);
+    const booked = new Set<string>();
+    (data || []).forEach((b: any) => {
+      if (b.id !== booking.id) booked.add(to12h(b.booking_time));
+    });
+    setReschedBooked(booked);
+  };
+
+  const openReschedule = (booking: Booking) => {
+    const d = new Date(booking.booking_date);
+    setRescheduleTarget(booking);
+    setReschedDate(d);
+    setReschedMonth(d);
+    setReschedTime(to12h(booking.booking_time));
+    fetchReschedSlots(booking, d);
+  };
+
+  useEffect(() => {
+    if (rescheduleTarget) fetchReschedSlots(rescheduleTarget, reschedDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reschedDate, rescheduleTarget?.id]);
+
+  useEffect(() => {
+    if (!rescheduleTarget?.barber_id) return;
+    const ch = supabase
+      .channel(`reschedule-${rescheduleTarget.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `barber_id=eq.${rescheduleTarget.barber_id}` }, () => {
+        fetchReschedSlots(rescheduleTarget, reschedDate);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rescheduleTarget?.id, reschedDate]);
+
+  const handleReschedule = async () => {
+    if (!rescheduleTarget || !user) return;
+    setRescheduling(true);
+    const dateStr = format(reschedDate, 'yyyy-MM-dd');
+    const time24 = to24h(reschedTime) + ':00';
+    const { error } = await supabase
+      .from('bookings')
+      .update({ booking_date: dateStr, booking_time: time24, updated_at: new Date().toISOString() })
+      .eq('id', rescheduleTarget.id)
+      .eq('user_id', user.id);
+    setRescheduling(false);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Could not reschedule', description: error.message });
+      return;
+    }
+    toast({ title: 'Booking rescheduled', description: `${format(reschedDate, 'MMM dd, yyyy')} at ${reschedTime}` });
+    setRescheduleTarget(null);
     fetchBookings();
   };
 
@@ -290,13 +395,13 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
                   </div>
                   <div className="flex gap-3 mt-4">
                     <Button
-                      onClick={() => handleCancel(booking.id)}
+                      onClick={() => setCancelTarget(booking)}
                       variant="secondary"
                       className="flex-1"
                     >
                       Cancel
                     </Button>
-                    <Button variant="default" className="flex-1">
+                    <Button variant="default" className="flex-1" onClick={() => openReschedule(booking)}>
                       Reschedule
                     </Button>
                   </div>
@@ -344,6 +449,113 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
               </div>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">Are you sure you want to cancel?</DialogTitle>
+          </DialogHeader>
+          {cancelTarget && (
+            <div className="space-y-3 mt-2">
+              <div className="rounded-lg border border-border bg-secondary/40 p-4 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Salon</span>
+                  <span className="font-semibold">{cancelTarget.barbers?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Date</span>
+                  <span>{format(new Date(cancelTarget.booking_date), 'MMM dd, yyyy')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Time</span>
+                  <span>{cancelTarget.booking_time}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <Button variant="outline" onClick={() => setCancelTarget(null)} disabled={cancelling}>
+                  No, Keep It
+                </Button>
+                <Button variant="destructive" onClick={() => handleCancel(cancelTarget.id)} disabled={cancelling}>
+                  {cancelling ? 'Cancelling…' : 'Yes, Cancel Booking'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!rescheduleTarget} onOpenChange={(o) => !o && setRescheduleTarget(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display">Reschedule Booking</DialogTitle>
+          </DialogHeader>
+          {rescheduleTarget && (
+            <div className="space-y-4 mt-2">
+              <div className="bg-card rounded-xl p-4">
+                <div className="flex items-center justify-between pb-3">
+                  <Button size="icon" variant="ghost" onClick={() => setReschedMonth(addMonths(reschedMonth, -1))}>
+                    <span className="material-symbols-outlined">chevron_left</span>
+                  </Button>
+                  <p className="text-base font-bold">{format(reschedMonth, 'MMMM yyyy')}</p>
+                  <Button size="icon" variant="ghost" onClick={() => setReschedMonth(addMonths(reschedMonth, 1))}>
+                    <span className="material-symbols-outlined">chevron_right</span>
+                  </Button>
+                </div>
+                <div className="grid grid-cols-7 text-center gap-1">
+                  {['S','M','T','W','T','F','S'].map((d, i) => (
+                    <p key={i} className="text-xs font-bold text-muted-foreground h-8 flex items-center justify-center">{d}</p>
+                  ))}
+                  {eachDayOfInterval({ start: startOfMonth(reschedMonth), end: endOfMonth(reschedMonth) }).map((day) => {
+                    const isPast = isBefore(startOfDay(day), startOfDay(new Date()));
+                    return (
+                      <Button
+                        key={day.toISOString()}
+                        variant={isSameDay(day, reschedDate) ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setReschedDate(day)}
+                        disabled={isPast}
+                        className="h-9 rounded-full"
+                      >
+                        {format(day, 'd')}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold mb-2">Select Time</h4>
+                <div className="grid grid-cols-3 gap-2">
+                  {timeSlots.map((t) => {
+                    const isBooked = reschedBooked.has(t);
+                    const isSelected = reschedTime === t && !isBooked;
+                    return (
+                      <Button
+                        key={t}
+                        variant={isSelected ? 'default' : 'outline'}
+                        size="sm"
+                        disabled={isBooked}
+                        onClick={() => setReschedTime(t)}
+                        className={isBooked ? 'opacity-40' : ''}
+                      >
+                        {t}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <Button
+                className="w-full h-12 font-bold"
+                onClick={handleReschedule}
+                disabled={rescheduling || reschedBooked.has(reschedTime)}
+              >
+                {rescheduling ? 'Rescheduling…' : `Reschedule to ${format(reschedDate, 'MMM dd')} at ${reschedTime}`}
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </section>
