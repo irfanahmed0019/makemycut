@@ -106,7 +106,12 @@ export default function SalonDashboard() {
   const handleQRScan = async (qrData: string) => {
     try {
       const bookingData = JSON.parse(qrData);
-      const booking = allBookings.find((b) => b.id === bookingData.bookingId);
+      const isUuid = (v: unknown) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+      if (!bookingData || !isUuid(bookingData.bookingId) || !isUuid(bookingData.userId)) {
+        toast({ variant: 'destructive', title: 'Invalid QR Code', description: 'QR data is malformed.' });
+        return;
+      }
+      const booking = allBookings.find((b) => b.id === bookingData.bookingId && b.user_id === bookingData.userId);
       if (!booking) { toast({ variant: 'destructive', title: 'Invalid QR Code' }); return; }
       if (booking.status === 'completed') { toast({ variant: 'destructive', title: 'Already Completed' }); return; }
       const { error } = await supabase.from('bookings').update({ status: 'completed' }).eq('id', bookingData.bookingId);
