@@ -13,6 +13,7 @@ import { QRScanner } from '@/components/salon/QRScanner';
 import { DashboardAnalytics } from '@/components/salon/DashboardAnalytics';
 import { OwnerQueueTab } from '@/features/salon/components/OwnerQueueTab';
 import { OwnerSettingsTab } from '@/features/salon/components/OwnerSettingsTab';
+import { SalonQRCodes } from '@/features/salon/components/SalonQRCodes';
 import { cn } from '@/lib/utils';
 
 interface Booking {
@@ -106,7 +107,12 @@ export default function SalonDashboard() {
   const handleQRScan = async (qrData: string) => {
     try {
       const bookingData = JSON.parse(qrData);
-      const booking = allBookings.find((b) => b.id === bookingData.bookingId);
+      const isUuid = (v: unknown) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+      if (!bookingData || !isUuid(bookingData.bookingId) || !isUuid(bookingData.userId)) {
+        toast({ variant: 'destructive', title: 'Invalid QR Code', description: 'QR data is malformed.' });
+        return;
+      }
+      const booking = allBookings.find((b) => b.id === bookingData.bookingId && b.user_id === bookingData.userId);
       if (!booking) { toast({ variant: 'destructive', title: 'Invalid QR Code' }); return; }
       if (booking.status === 'completed') { toast({ variant: 'destructive', title: 'Already Completed' }); return; }
       const { error } = await supabase.from('bookings').update({ status: 'completed' }).eq('id', bookingData.bookingId);
@@ -161,10 +167,11 @@ export default function SalonDashboard() {
         </Button>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="appointments">Bookings</TabsTrigger>
             <TabsTrigger value="queue">Queue</TabsTrigger>
+            <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -227,6 +234,10 @@ export default function SalonDashboard() {
 
           <TabsContent value="queue" className="mt-4">
             {barber && <OwnerQueueTab barberId={barber.id} />}
+          </TabsContent>
+
+          <TabsContent value="qrcodes" className="mt-4">
+            {barber && <SalonQRCodes salonId={barber.id} salonName={barber.name} />}
           </TabsContent>
 
           <TabsContent value="settings" className="mt-4">

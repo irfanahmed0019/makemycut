@@ -10,6 +10,7 @@ import { AreaIndexProvider } from "./contexts/AreaIndexContext";
 // Customer routes
 import CustomerHome from "@/features/customer/pages/CustomerHome";
 import CustomerAuth from "@/features/customer/pages/CustomerAuth";
+import SalonRedirect from "@/features/customer/pages/SalonRedirect";
 import Reviews from "./pages/Reviews";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -42,6 +43,8 @@ const App = () => (
                 {/* Customer Routes */}
                 <Route path="/" element={<CustomerHome />} />
                 <Route path="/auth" element={<CustomerAuth />} />
+                <Route path="/book" element={<SalonRedirect action="book" />} />
+                <Route path="/join-queue" element={<SalonRedirect action="queue" />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/reviews" element={<Reviews />} />
 
