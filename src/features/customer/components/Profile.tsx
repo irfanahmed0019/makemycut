@@ -105,21 +105,21 @@ export const Profile = () => {
     toast({ title: 'UPI ID saved' });
   };
 
-  const handleShareReferral = async () => {
-    const code = profile.referral_code;
-    const text = `Book instantly! Use my code ${code} at https://makemycut.vercel.app`;
+  const handleShareApp = async () => {
+    const text = "Book your haircut instantly — no waiting! 💈 makemycut.vercel.app/#";
     try {
       if (navigator.share) {
         await navigator.share({ title: 'MakeMyCut', text });
         return;
       }
-    } catch { /* fall through to clipboard */ }
+    } catch { /* fall through */ }
     try {
       await navigator.clipboard.writeText(text);
-      toast({ title: 'Referral code copied!' });
-    } catch {
-      toast({ variant: 'destructive', title: 'Could not share', description: code });
-    }
+      toast({ title: 'Link copied!' });
+      return;
+    } catch { /* fall through to WhatsApp */ }
+    const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(wa, '_blank', 'noopener,noreferrer');
   };
 
   const handlePasswordReset = async () => {
@@ -235,22 +235,23 @@ export const Profile = () => {
           <span className="material-symbols-outlined text-muted-foreground">chevron_right</span>
         </button>
 
-        {/* Referral code */}
-        <div className="flex items-center justify-between py-3">
+        {/* Share MakeMyCut */}
+        <button
+          type="button"
+          onClick={handleShareApp}
+          className="w-full flex items-center justify-between py-3 text-left hover:bg-muted/40 rounded-lg px-1"
+        >
           <div className="flex items-center gap-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
-              <span className="material-symbols-outlined">group</span>
+              <span className="material-symbols-outlined">share</span>
             </div>
             <div>
-              <p className="text-base text-foreground">Referral Code</p>
-              <p className="text-xs text-muted-foreground font-mono">{profile.referral_code}</p>
+              <p className="text-base text-foreground">Share MakeMyCut</p>
+              <p className="text-xs text-muted-foreground">Invite friends to skip the wait</p>
             </div>
           </div>
-          <Button variant="secondary" size="sm" onClick={handleShareReferral}>
-            <span className="material-symbols-outlined text-base mr-2">share</span>
-            Share
-          </Button>
-        </div>
+          <span className="material-symbols-outlined text-muted-foreground">chevron_right</span>
+        </button>
 
         {/* Privacy */}
         <button
