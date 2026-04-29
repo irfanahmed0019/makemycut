@@ -13,6 +13,7 @@ import { QRScanner } from '@/components/salon/QRScanner';
 import { DashboardAnalytics } from '@/components/salon/DashboardAnalytics';
 import { OwnerQueueTab } from '@/features/salon/components/OwnerQueueTab';
 import { OwnerSettingsTab } from '@/features/salon/components/OwnerSettingsTab';
+import { SalonQRCodes } from '@/features/salon/components/SalonQRCodes';
 import { cn } from '@/lib/utils';
 
 interface Booking {
@@ -166,10 +167,11 @@ export default function SalonDashboard() {
         </Button>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="appointments">Bookings</TabsTrigger>
             <TabsTrigger value="queue">Queue</TabsTrigger>
+            <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -232,6 +234,10 @@ export default function SalonDashboard() {
 
           <TabsContent value="queue" className="mt-4">
             {barber && <OwnerQueueTab barberId={barber.id} />}
+          </TabsContent>
+
+          <TabsContent value="qrcodes" className="mt-4">
+            {barber && <SalonQRCodes salonId={barber.id} salonName={barber.name} />}
           </TabsContent>
 
           <TabsContent value="settings" className="mt-4">
