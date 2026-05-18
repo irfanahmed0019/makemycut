@@ -62,7 +62,7 @@ export const BarberReviews = ({ barberId }: BarberReviewsProps) => {
                 <span
                   key={i}
                   className={`material-symbols-outlined text-lg ${
-                    i < review.rating ? 'text-yellow-400' : 'text-gray-600'
+                    i < review.rating ? 'text-yellow-400' : 'text-muted-foreground'
                   }`}
                 >
                   star
