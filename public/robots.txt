@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /salon-dashboard
-Sitemap: https://makemycut.vercel.app/sitemap.xml
+Sitemap: https://makemycut.lovable.app/sitemap.xml
