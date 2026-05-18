@@ -1,0 +1,16 @@
+# MakeMyCut
+
+> Skip the wait. Book haircuts, barbers, and salons instantly — no calls, no queues.
+
+MakeMyCut is an instant salon booking and live-queue platform. Customers discover verified barbers and salons by district and area, book a time slot in seconds, or join the in-shop queue digitally and get notified when it's their turn. All bookings are pay-at-salon.
+
+## Pages
+
+- [Home](/): Discover salons, book instantly, or join a live queue.
+- [Trivandrum salons](/salons/trivandrum): Top salons across Trivandrum district.
+- [Salons in Attingal](/salons/trivandrum/attingal): Verified salons in Attingal, Trivandrum.
+
+## Optional
+
+- [Customer sign in](/auth): Email or Google sign-in for customers.
+- [Salon owner sign in](/salon-login): Dashboard access for salon owners.
