@@ -436,7 +436,7 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
                   </div>
                   <span className={`font-medium capitalize ${
                     booking.status === 'completed' ? 'text-green-400' :
-                    booking.status === 'cancelled' ? 'text-red-400' : 'text-gray-500'
+                    booking.status === 'cancelled' ? 'text-destructive' : 'text-muted-foreground'
                   }`}>
                     {booking.status}
                   </span>
