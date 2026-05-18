@@ -125,7 +125,7 @@ export const TrustedPicks = ({ onBookNow, onViewSalon, onJoinQueue }: TrustedPic
       <div className="space-y-8">
         <div>
           <h3 className="text-xl font-bold mb-4">Featured Salons</h3>
-          <div className="space-y-4">{salons.map(renderBarberCard)}</div>
+          <div className="space-y-4">{salons.map((b, i) => renderBarberCard(b, i))}</div>
         </div>
         <TrustSection />
         <FaqSection />
