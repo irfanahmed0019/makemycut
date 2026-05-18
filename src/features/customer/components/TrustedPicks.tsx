@@ -53,7 +53,7 @@ export const TrustedPicks = ({ onBookNow, onViewSalon, onJoinQueue }: TrustedPic
     fetchSalons();
   }, []);
 
-  const renderBarberCard = (barber: Barber) => {
+  const renderBarberCard = (barber: Barber, index: number = 0) => {
     const s = settings[barber.id];
     const bookingEnabled = s?.booking_enabled !== false;
     const queueEnabled = s?.queue_enabled !== false;
@@ -71,7 +71,16 @@ export const TrustedPicks = ({ onBookNow, onViewSalon, onJoinQueue }: TrustedPic
               <span className="text-muted-foreground">({barber.review_count})</span>
             </div>
           </div>
-          <img alt={barber.name} className="w-28 h-28 object-cover rounded-lg" src={barber.image_url} />
+          <img
+            alt={barber.name}
+            className="w-28 h-28 object-cover rounded-lg"
+            src={barber.image_url}
+            width={112}
+            height={112}
+            loading={index === 0 ? 'eager' : 'lazy'}
+            fetchPriority={index === 0 ? 'high' : 'auto'}
+            decoding="async"
+          />
         </div>
         <div className="flex gap-2">
           {bookingEnabled && (
@@ -116,7 +125,7 @@ export const TrustedPicks = ({ onBookNow, onViewSalon, onJoinQueue }: TrustedPic
       <div className="space-y-8">
         <div>
           <h3 className="text-xl font-bold mb-4">Featured Salons</h3>
-          <div className="space-y-4">{salons.map(renderBarberCard)}</div>
+          <div className="space-y-4">{salons.map((b, i) => renderBarberCard(b, i))}</div>
         </div>
         <TrustSection />
         <FaqSection />
