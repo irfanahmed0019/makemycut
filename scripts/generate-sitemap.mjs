@@ -8,7 +8,7 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import 'dotenv/config';
 
-const SITE = process.env.SITE_URL || 'https://makemycut.vercel.app';
+const SITE = process.env.SITE_URL || 'https://makemycut.lovable.app';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -16,6 +16,10 @@ const STATIC_ROUTES = [
   { path: '/', priority: '1.0', changefreq: 'weekly' },
   { path: '/auth', priority: '0.4', changefreq: 'monthly' },
   { path: '/salon-login', priority: '0.4', changefreq: 'monthly' },
+  { path: '/reviews', priority: '0.5', changefreq: 'weekly' },
+  { path: '/book', priority: '0.5', changefreq: 'monthly' },
+  { path: '/join-queue', priority: '0.5', changefreq: 'monthly' },
+  { path: '/reset-password', priority: '0.2', changefreq: 'yearly' },
 ];
 
 async function fetchAreas() {
