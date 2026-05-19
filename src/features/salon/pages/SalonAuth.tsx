@@ -36,7 +36,13 @@ export default function SalonAuth() {
         if (barber) {
           navigate('/salon-dashboard', { replace: true });
         } else {
-          toast({ variant: 'destructive', title: 'Access Denied', description: 'You are not registered as a salon owner.' });
+          const { data: assignment } = await supabase
+            .from('barber_assignments').select('id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
+          if (assignment) {
+            navigate('/barber-dashboard', { replace: true });
+          } else {
+            toast({ variant: 'destructive', title: 'Access Denied', description: 'You are not registered as a salon owner or barber.' });
+          }
         }
         setIsCheckingSalon(false);
         setJustSignedIn(false);
