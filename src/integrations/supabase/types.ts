@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      barber_assignments: {
+        Row: {
+          chair_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          salon_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chair_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          salon_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chair_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          salon_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       barbers: {
         Row: {
           address: string | null
@@ -79,6 +109,7 @@ export type Database = {
           barber_id: string
           booking_date: string
           booking_time: string
+          chair_id: string | null
           created_at: string | null
           expires_at: string | null
           id: string
@@ -94,6 +125,7 @@ export type Database = {
           barber_id: string
           booking_date: string
           booking_time: string
+          chair_id?: string | null
           created_at?: string | null
           expires_at?: string | null
           id?: string
@@ -109,6 +141,7 @@ export type Database = {
           barber_id?: string
           booking_date?: string
           booking_time?: string
+          chair_id?: string | null
           created_at?: string | null
           expires_at?: string | null
           id?: string
@@ -136,6 +169,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      chair_transfer_requests: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          from_barber_id: string
+          from_chair_id: string
+          id: string
+          queue_id: string | null
+          salon_id: string
+          status: string
+          to_barber_id: string | null
+          to_chair_id: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          from_barber_id: string
+          from_chair_id: string
+          id?: string
+          queue_id?: string | null
+          salon_id: string
+          status?: string
+          to_barber_id?: string | null
+          to_chair_id: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          from_barber_id?: string
+          from_chair_id?: string
+          id?: string
+          queue_id?: string | null
+          salon_id?: string
+          status?: string
+          to_barber_id?: string | null
+          to_chair_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chairs: {
+        Row: {
+          chair_number: number
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string | null
+          salon_id: string
+          updated_at: string
+        }
+        Insert: {
+          chair_number: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string | null
+          salon_id: string
+          updated_at?: string
+        }
+        Update: {
+          chair_number?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string | null
+          salon_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -175,6 +280,7 @@ export type Database = {
       }
       queues: {
         Row: {
+          chair_id: string | null
           created_at: string
           customer_name: string
           customer_phone: string
@@ -189,6 +295,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          chair_id?: string | null
           created_at?: string
           customer_name: string
           customer_phone: string
@@ -203,6 +310,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          chair_id?: string | null
           created_at?: string
           customer_name?: string
           customer_phone?: string
@@ -362,6 +470,7 @@ export type Database = {
           barber_id: string
           booking_date: string
           booking_time: string
+          chair_id: string | null
           created_at: string
           expires_at: string
           id: string
@@ -371,6 +480,7 @@ export type Database = {
           barber_id: string
           booking_date: string
           booking_time: string
+          chair_id?: string | null
           created_at?: string
           expires_at?: string
           id?: string
@@ -380,6 +490,7 @@ export type Database = {
           barber_id?: string
           booking_date?: string
           booking_time?: string
+          chair_id?: string | null
           created_at?: string
           expires_at?: string
           id?: string
@@ -467,21 +578,35 @@ export type Database = {
         Returns: boolean
       }
       clean_expired_holds: { Args: never; Returns: undefined }
-      confirm_booking_from_hold: {
-        Args: {
-          p_barber_id: string
-          p_booking_date: string
-          p_booking_time: string
-          p_service_id: string
-          p_user_id: string
-        }
-        Returns: string
-      }
+      confirm_booking_from_hold:
+        | {
+            Args: {
+              p_barber_id: string
+              p_booking_date: string
+              p_booking_time: string
+              p_service_id: string
+              p_user_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_barber_id: string
+              p_booking_date: string
+              p_booking_time: string
+              p_chair_id?: string
+              p_service_id: string
+              p_user_id: string
+            }
+            Returns: string
+          }
       confirm_hold: {
         Args: { p_booking_id: string; p_user_id: string }
         Returns: boolean
       }
       count_active_bookings: { Args: { p_user_id: string }; Returns: number }
+      current_barber_chair: { Args: { _user_id: string }; Returns: string }
+      current_barber_salon: { Args: { _user_id: string }; Returns: string }
       decrement_trust_on_cancel: {
         Args: { p_user_id: string }
         Returns: undefined
@@ -525,20 +650,36 @@ export type Database = {
         }
         Returns: boolean
       }
-      join_queue: {
-        Args: {
-          p_customer_name: string
-          p_customer_phone: string
-          p_salon_id: string
-          p_service_id: string
-          p_user_id?: string
-        }
-        Returns: {
-          estimated_wait: number
-          queue_id: string
-          queue_pos: number
-        }[]
-      }
+      join_queue:
+        | {
+            Args: {
+              p_customer_name: string
+              p_customer_phone: string
+              p_salon_id: string
+              p_service_id: string
+              p_user_id?: string
+            }
+            Returns: {
+              estimated_wait: number
+              queue_id: string
+              queue_pos: number
+            }[]
+          }
+        | {
+            Args: {
+              p_chair_id?: string
+              p_customer_name: string
+              p_customer_phone: string
+              p_salon_id: string
+              p_service_id: string
+              p_user_id?: string
+            }
+            Returns: {
+              estimated_wait: number
+              queue_id: string
+              queue_pos: number
+            }[]
+          }
       leave_queue: {
         Args: { p_queue_id: string; p_user_id: string }
         Returns: boolean
@@ -555,15 +696,39 @@ export type Database = {
         Returns: boolean
       }
       normalize_slug: { Args: { val: string }; Returns: string }
-      place_hold: {
+      place_hold:
+        | {
+            Args: {
+              p_barber_id: string
+              p_booking_date: string
+              p_booking_time: string
+              p_service_id: string
+              p_user_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_barber_id: string
+              p_booking_date: string
+              p_booking_time: string
+              p_chair_id?: string
+              p_service_id: string
+              p_user_id: string
+            }
+            Returns: string
+          }
+      request_chair_transfer: {
         Args: {
-          p_barber_id: string
-          p_booking_date: string
-          p_booking_time: string
-          p_service_id: string
-          p_user_id: string
+          p_booking_id: string
+          p_queue_id: string
+          p_to_chair_id: string
         }
         Returns: string
+      }
+      respond_chair_transfer: {
+        Args: { p_accept: boolean; p_request_id: string }
+        Returns: boolean
       }
       search_areas: {
         Args: { p_query: string }
@@ -576,7 +741,7 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "barber"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -704,7 +869,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "barber"],
     },
   },
 } as const
