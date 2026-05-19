@@ -20,6 +20,8 @@ export const JoinQueue = ({ salon, onJoined, onBack }: JoinQueueProps) => {
   const [phone, setPhone] = useState('');
   const [services, setServices] = useState<any[]>([]);
   const [selectedService, setSelectedService] = useState<string>('');
+  const [chairs, setChairs] = useState<any[]>([]);
+  const [selectedChair, setSelectedChair] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alreadyInQueue, setAlreadyInQueue] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
@@ -47,10 +49,14 @@ export const JoinQueue = ({ salon, onJoined, onBack }: JoinQueueProps) => {
       const servicesPromise = supabase
         .from('services').select('*').eq('barber_id', salon.id)
         .eq('is_active', true).order('order_index');
+      const chairsPromise = supabase
+        .from('chairs').select('id, chair_number, name, is_active')
+        .eq('salon_id', salon.id).eq('is_active', true)
+        .order('chair_number');
       const statusPromise = user ? fetchStatus() : Promise.resolve(null);
 
-      const [{ data: profile }, { data: serviceRows }, status] = await Promise.all([
-        profilePromise, servicesPromise, statusPromise,
+      const [{ data: profile }, { data: serviceRows }, { data: chairRows }, status] = await Promise.all([
+        profilePromise, servicesPromise, chairsPromise, statusPromise,
       ]);
 
       if (!isMounted) return;
@@ -62,6 +68,10 @@ export const JoinQueue = ({ salon, onJoined, onBack }: JoinQueueProps) => {
       setServices(serviceRows || []);
       if (serviceRows && serviceRows.length > 0) {
         setSelectedService((c) => c || serviceRows[0].id);
+      }
+      setChairs(chairRows || []);
+      if (chairRows && chairRows.length > 0) {
+        setSelectedChair((c) => c || chairRows[0].id);
       }
 
       if (status) {
@@ -100,6 +110,7 @@ export const JoinQueue = ({ salon, onJoined, onBack }: JoinQueueProps) => {
       p_customer_phone: phone.trim(),
       p_service_id: selectedService || null,
       p_user_id: user.id,
+      p_chair_id: selectedChair || null,
     });
 
     setIsSubmitting(false);
@@ -147,6 +158,30 @@ export const JoinQueue = ({ salon, onJoined, onBack }: JoinQueueProps) => {
                       <div className="flex-1 border border-border rounded-lg p-3">
                         <p className="font-medium">{s.name}</p>
                         <p className="text-sm text-muted-foreground">{s.duration_minutes} min{s.price > 0 ? ` · ₹${s.price}` : ''}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {chairs.length > 0 && (
+              <div>
+                <Label className="mb-2 block">Select Chair / Seat</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {chairs.map((c) => (
+                    <label key={c.id} className="cursor-pointer">
+                      <input
+                        type="radio"
+                        name="queue-chair"
+                        value={c.id}
+                        checked={selectedChair === c.id}
+                        onChange={(e) => setSelectedChair(e.target.value)}
+                        className="sr-only peer"
+                      />
+                      <div className="border border-border rounded-lg p-3 text-center peer-checked:border-primary peer-checked:bg-primary/10">
+                        <p className="font-medium">#{c.chair_number}</p>
+                        <p className="text-xs text-muted-foreground">{c.name || 'Chair'}</p>
                       </div>
                     </label>
                   ))}
