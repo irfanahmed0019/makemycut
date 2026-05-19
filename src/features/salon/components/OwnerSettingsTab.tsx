@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ChairsManager } from './ChairsManager';
+import { StaffManager } from './StaffManager';
 
 interface OwnerSettingsTabProps {
   barberId: string;
@@ -73,6 +75,12 @@ export const OwnerSettingsTab = ({ barberId, barberName }: OwnerSettingsTabProps
 
   return (
     <div className="space-y-4">
+      {/* Chairs */}
+      <ChairsManager salonId={barberId} />
+
+      {/* Staff */}
+      <StaffManager salonId={barberId} />
+
       {/* Salon Info */}
       <Card>
         <CardHeader><CardTitle className="text-lg">Salon Information</CardTitle></CardHeader>
