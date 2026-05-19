@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 
     // Parse and validate input
     const body = await req.json();
-    const { barber_id, booking_date, booking_time, service_id } = body;
+    const { barber_id, booking_date, booking_time, service_id, chair_id } = body;
 
     if (!barber_id || !booking_date || !booking_time || !service_id) {
       return new Response(
@@ -141,6 +141,7 @@ Deno.serve(async (req) => {
       p_booking_time: booking_time,
       p_user_id: user.id,
       p_service_id: service_id,
+      p_chair_id: chair_id ?? null,
     });
 
     if (error) {

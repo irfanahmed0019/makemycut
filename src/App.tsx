@@ -21,6 +21,9 @@ import SalonDashboard from "./pages/SalonDashboard";
 // Admin routes
 import AdminDashboard from "@/features/admin/pages/AdminDashboard";
 
+// Barber routes
+import BarberDashboard from "@/features/barber/pages/BarberDashboard";
+
 // Directory (SEO) routes
 import DistrictPage from "@/features/directory/pages/DistrictPage";
 import AreaPage from "@/features/directory/pages/AreaPage";
@@ -58,6 +61,9 @@ const App = () => (
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<AdminDashboard />} />
+
+                {/* Barber Routes */}
+                <Route path="/barber-dashboard" element={<BarberDashboard />} />
 
                 {/* Catch-all */}
                 <Route path="*" element={<NotFound />} />

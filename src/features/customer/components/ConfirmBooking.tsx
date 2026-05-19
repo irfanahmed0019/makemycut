@@ -44,6 +44,8 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   const [showGateModal, setShowGateModal] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
+  const [chairs, setChairs] = useState<any[]>([]);
+  const [selectedChair, setSelectedChair] = useState<string>('');
 
   // Capture install prompt
   useEffect(() => {
@@ -57,6 +59,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
 
   useEffect(() => {
     fetchServices();
+    fetchChairs();
   }, [barber]);
 
   // Fetch slot states + realtime subscription to bookings changes
@@ -89,6 +92,15 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
       const available = timeSlots.find((t) => !booked.has(t));
       if (available) setSelectedTime(available);
     }
+  };
+
+  const fetchChairs = async () => {
+    const { data } = await supabase
+      .from('chairs').select('id, chair_number, name, is_active')
+      .eq('salon_id', barber.id).eq('is_active', true)
+      .order('chair_number');
+    setChairs(data || []);
+    if (data && data.length > 0) setSelectedChair((c) => c || data[0].id);
   };
 
   // Default services if none exist in database
@@ -146,6 +158,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
         booking_date: dateStr,
         booking_time: time24,
         service_id: selectedService,
+        chair_id: selectedChair || null,
       },
     });
 
@@ -326,6 +339,30 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
           );
         })}
       </div>
+
+      {chairs.length > 0 && (
+        <>
+          <h2 className="text-lg font-bold px-4 pb-3 pt-6">Select Chair / Seat</h2>
+          <div className="grid grid-cols-2 gap-3 px-4">
+            {chairs.map((c) => (
+              <label key={c.id} className="cursor-pointer">
+                <input
+                  type="radio"
+                  name="chair"
+                  value={c.id}
+                  checked={selectedChair === c.id}
+                  onChange={(e) => setSelectedChair(e.target.value)}
+                  className="sr-only peer"
+                />
+                <div className="border border-border rounded-lg p-3 text-center peer-checked:border-primary peer-checked:bg-primary/10">
+                  <p className="font-medium">Chair #{c.chair_number}</p>
+                  <p className="text-xs text-muted-foreground">{c.name || ''}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </>
+      )}
 
       <h2 className="text-lg font-bold px-4 pb-3 pt-6">Booking Summary</h2>
       <div className="px-4">

@@ -1,104 +1,80 @@
+## Goal
 
-# Plan: Fix Customer Name Display and Booking Flow
+Introduce "chairs/seats" as a first-class concept so each salon can have N chairs. Customers pick a chair when booking or joining the queue. Add a new **Barber** user role: each barber is assigned to a chair, sees their own queue, can view the overall queue, and can request to transfer a customer to another chair — the receiving barber must accept.
 
-## Summary
-This plan addresses three key issues:
-1. **Salon Dashboard showing "Walk-in Customer"** - Fix the profile lookup to always show real customer names for logged-in users
-2. **Service Selection visibility** - Already working correctly (no changes needed)
-3. **Clean up fallback labels** - Remove "Walk-in Customer" label for authenticated bookings
+## Scope
 
----
+### 1. Database (new + altered)
 
-## What Will Change
+**New tables**
+- `chairs` — `id`, `salon_id`, `chair_number`, `name`, `is_active`, timestamps. Unique `(salon_id, chair_number)`.
+- `barber_assignments` — `id`, `user_id` (the barber), `salon_id`, `chair_id` (nullable for unassigned), `is_active`. Unique `(chair_id)` while active.
+- `chair_transfer_requests` — `id`, `booking_id` (nullable), `queue_id` (nullable), `from_chair_id`, `to_chair_id`, `from_barber_id`, `to_barber_id`, `status` (`pending` / `accepted` / `rejected` / `cancelled`), timestamps.
 
-### 1. Salon Dashboard - Customer Name Display
-**File:** `src/pages/SalonDashboard.tsx`
+**Altered tables**
+- `bookings` — add `chair_id uuid` (nullable for legacy rows).
+- `queues` — add `chair_id uuid` (nullable). Update unique/position logic to be **per-chair per-day**.
+- `app_role` enum — add `'barber'`.
 
-**Current behavior:**  
-- Fetches customer name from `profiles` table using `booking.user_id`
-- Falls back to "Walk-in Customer" if profile is empty
+**RPC updates**
+- `place_hold`, `confirm_hold`, `confirm_booking_from_hold`, `join_queue`, `get_queue_status`, `get_occupied_slots`, `is_slot_occupied`, `get_next_queue_position`, `mark_queue_served`, `resequence_queue_positions` — all become chair-aware (slot uniqueness becomes `(barber_id, chair_id, date, time)`; queue position scoped to chair).
+- New: `request_chair_transfer`, `respond_chair_transfer`.
 
-**Problem:**  
-The fallback "Walk-in Customer" appears for logged-in users if:
-- Profile query returns empty due to RLS policy restrictions
-- Salon owners cannot read customer profiles
+**RLS**
+- `chairs`: public read, owner/admin write.
+- `barber_assignments`: owner/admin manage; barber reads own.
+- `chair_transfer_requests`: barbers see requests where they are sender/receiver; owner/admin see all for own salon.
+- Extend `bookings`/`queues` policies so an assigned barber can see rows for their chair.
 
-**Solution:**  
-- Check RLS policies on the `profiles` table - salon owners need SELECT access to see customer names
-- If RLS allows access: simply remove the fallback and show actual name
-- If RLS restricts access: use a database function or modify RLS to allow salon owners to view names of customers who booked at their salon
+### 2. Admin dashboard
+- New "Chairs" management per salon: add / rename / activate / deactivate.
+- New "Barbers" tab: invite/assign existing users as barbers, attach to a chair.
 
-### 2. Service Selection - Verification
-**File:** `src/features/customer/components/ConfirmBooking.tsx`
+### 3. Salon owner dashboard
+- New "Chairs" tab inside `OwnerSettingsTab` — same CRUD as admin scoped to own salon.
+- New "Staff/Barbers" tab — assign barber users to chairs, remove assignments.
+- `OwnerQueueTab` grouped by chair; owner can reassign queue/booking to another chair manually (no approval needed for owner).
 
-**Current Status:** Already implemented correctly (lines 170-190)
-- Services are fetched from database on component mount
-- Radio button selection works
-- First service is auto-selected by default
+### 4. Customer flow
+- `ConfirmBooking` (booking flow): after picking date/time, add a **Chair selector** showing only chairs whose slot is free at that time. Pass `chair_id` to `place_hold` / `confirm_booking_from_hold`.
+- `JoinQueue`: add **Chair selector** (shows current queue length per chair); pass `chair_id` to `join_queue`. `QueueStatus` shows position within selected chair.
+- `BookingConfirmed` shows the chair name/number.
 
-**Result:** No changes needed - service selection is visible and functional.
+### 5. New Barber role + UI
+- New route `/barber-dashboard` (in `src/features/barber/`).
+- Auth: barber signs in via existing salon-auth page; role check routes them to `/barber-dashboard`.
+- Dashboard tabs:
+  - **My Queue** — only entries for the barber's assigned chair (waiting + serving). Mark served / remove.
+  - **All Chairs** — toggle showing whole salon's queue grouped by chair (read-only overview).
+  - **Transfer** — on any of their own queue entries or upcoming bookings, "Transfer to chair…" picks a target chair (must have an active barber). Creates a `chair_transfer_requests` row.
+  - **Incoming requests** — pending transfers targeting this barber's chair; Accept / Reject. Accept atomically updates the booking/queue `chair_id` (and re-sequences queue position on the new chair).
 
----
+### 6. Routing / role plumbing
+- Update `useAdminCheck`-style hook → generic `useUserRole` returning `admin | barber | owner | customer`.
+- Update post-login routing in salon/customer auth pages.
+- Add memory note: roles now include `barber`; per-chair scoping is the source of truth for slot uniqueness and queue position.
 
-## Technical Details
-
-### Step 1: Add RLS Policy for Salon Owners to View Customer Names
-A new RLS policy will allow salon owners to SELECT from the `profiles` table ONLY for users who have bookings at their salon.
+## Technical details
 
 ```text
-Policy: "Salon owners can view customer profiles for their bookings"
-Command: SELECT
-Expression: EXISTS (
-  SELECT 1 FROM bookings b
-  INNER JOIN barbers bar ON b.barber_id = bar.id
-  WHERE b.user_id = profiles.id
-  AND bar.owner_id = auth.uid()
-)
+booking slot uniqueness:
+  UNIQUE(barber_id, chair_id, booking_date, booking_time)
+queue position scope:
+  per (salon_id, chair_id, joined_at::date)
+transfer accept (atomic):
+  UPDATE booking/queue SET chair_id = to_chair_id
+  UPDATE chair_transfer_requests SET status='accepted'
+  re-run resequence trigger for both old + new chair
 ```
 
-### Step 2: Update Salon Dashboard Logic
-Remove the "Walk-in Customer" fallback since all bookings come from authenticated users.
+Legacy rows with `chair_id IS NULL` are treated as "any chair" only for read; new writes always require a chair once a salon has ≥1 chair defined. A salon with **zero chairs defined** keeps current single-station behavior (back-compat).
 
-**Before:**
-```text
-customer_name: customerName || 'Walk-in Customer'
-```
+## Out of scope (ask if needed)
+- Barber self-signup flow (assumed: owner/admin invites by email and assigns).
+- Per-chair pricing or per-chair services.
+- Realtime push notifications for transfer requests (will use existing Supabase realtime channel only).
 
-**After:**
-```text
-customer_name: profile?.full_name || 'Customer'
-```
-
-The word "Customer" is a safety fallback that should never appear for valid bookings, but exists for edge cases.
-
-### Step 3: Verification
-- Confirm service selection renders correctly in customer booking flow
-- Confirm payment and reviews sections remain removed (no changes)
-- Test that dashboard shows real names
-
----
-
-## Files to Modify
-
-| File | Change Type | Description |
-|------|-------------|-------------|
-| Database (RLS) | Migration | Add SELECT policy on `profiles` for salon owners |
-| `src/pages/SalonDashboard.tsx` | Edit | Remove "Walk-in Customer" fallback label |
-
----
-
-## What Will NOT Change (Per Your Instructions)
-- Payment logic (already removed from customer flow)
-- Reviews/ratings (already removed)
-- Dashboard layout structure
-- Analytics tab
-- Calendar logic
-- Navigation
-
----
-
-## Expected Outcome
-1. Salon owners see real customer names (e.g., "Arjun Dx", "Prathyush")
-2. "Walk-in Customer" label never appears for logged-in users
-3. Service selection continues to work in customer booking flow
-4. Booking flow works end-to-end
+## Open questions
+1. Should customers **see barber names** per chair when picking, or just chair number?
+2. When no barber is assigned to a chair, should that chair be bookable at all?
+3. Should owner be able to override/force-transfer without barber acceptance?

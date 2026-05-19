@@ -21,7 +21,7 @@ export const OwnerQueueTab = ({ barberId }: OwnerQueueTabProps) => {
   const fetchQueue = async () => {
     const { data } = await supabase
       .from('queues')
-      .select('*, services:service_id(name, duration_minutes)')
+      .select('*, services:service_id(name, duration_minutes), chairs:chair_id(chair_number, name)')
       .eq('salon_id', barberId)
       .in('status', ['waiting', 'serving'])
       .order('queue_position', { ascending: true });
@@ -100,6 +100,9 @@ export const OwnerQueueTab = ({ barberId }: OwnerQueueTabProps) => {
                 <p className="font-bold">#{q.queue_position} — {q.customer_name}</p>
                 <p className="text-sm text-muted-foreground">{q.customer_phone}</p>
                 <p className="text-sm text-muted-foreground">{q.services?.name || 'No service'} {q.services?.duration_minutes ? `· ${q.services.duration_minutes} min` : ''}</p>
+                {q.chairs && (
+                  <p className="text-xs text-primary mt-1">Chair #{q.chairs.chair_number}{q.chairs.name ? ` — ${q.chairs.name}` : ''}</p>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => handleMarkServed(q.id)}>Served</Button>
