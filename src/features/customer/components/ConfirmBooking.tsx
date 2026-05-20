@@ -67,7 +67,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     fetchSlotStates();
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const channel = supabase
-      .channel(`slots-${barber.id}-${dateStr}`)
+      .channel(`slots-${barber.id}-${dateStr}-${selectedChair || 'any'}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'bookings', filter: `barber_id=eq.${barber.id}` },
@@ -77,7 +77,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedDate, barber]);
+  }, [selectedDate, barber, selectedChair]);
 
   const handleSlotSelect = (time: string) => {
     setSelectedTime(time);
@@ -85,7 +85,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
 
   const fetchSlotStates = async () => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    const booked = await fetchBookedSlots(barber.id, dateStr);
+    const booked = await fetchBookedSlots(barber.id, dateStr, undefined, selectedChair || null);
     setBookedSlots(booked);
 
     if (booked.has(selectedTime)) {

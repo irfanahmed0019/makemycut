@@ -35,11 +35,13 @@ export const OCCUPYING_STATUSES = ['upcoming', 'CONFIRMED', 'ON_HOLD', 'pending'
 export const fetchBookedSlots = async (
   barberId: string,
   dateStr: string,
-  excludeBookingId?: string
+  excludeBookingId?: string,
+  chairId?: string | null
 ): Promise<Set<string>> => {
   const { data, error } = await (supabase as any).rpc('get_occupied_slots', {
     p_barber_id: barberId,
     p_booking_date: dateStr,
+    p_chair_id: chairId ?? null,
   });
 
   const booked = new Set<string>();
