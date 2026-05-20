@@ -617,12 +617,24 @@ export type Database = {
       }
       expire_stale_queue_entries: { Args: never; Returns: undefined }
       get_next_queue_position: { Args: { p_salon_id: string }; Returns: number }
-      get_occupied_slots: {
-        Args: { p_barber_id: string; p_booking_date: string }
-        Returns: {
-          booking_time: string
-        }[]
-      }
+      get_occupied_slots:
+        | {
+            Args: { p_barber_id: string; p_booking_date: string }
+            Returns: {
+              booking_time: string
+            }[]
+          }
+        | {
+            Args: {
+              p_barber_id: string
+              p_booking_date: string
+              p_chair_id?: string
+            }
+            Returns: {
+              booking_time: string
+              chair_id: string
+            }[]
+          }
       get_queue_status: {
         Args: { p_salon_id: string; p_user_id: string }
         Returns: {
