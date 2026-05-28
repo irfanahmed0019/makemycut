@@ -1,41 +1,27 @@
 # MakeMyCut
 
-MakeMyCut is a modern salon booking platform built to remove the frustration of waiting in long queues for a simple haircut. Customers can discover salons, book appointments instantly, and verify bookings through QR-based confirmation — all from one seamless experience.
+MakeMyCut is a modern salon booking platform focused on reducing waiting time and improving the appointment experience for both customers and salon owners. The platform allows users to discover salons, schedule appointments instantly, and verify bookings through a streamlined QR-based workflow.
 
 ## Live Platforms
 
-### Marketing Website
+### Official Website
 https://makemycut.netlify.app
 
-### Web App
+### Web Application
 https://makemycut.vercel.app
 
----
+## Core Features
 
-## What MakeMyCut Does
-
-- Lets customers book salon appointments instantly
-- Reduces waiting time and crowding
-- Helps salons manage appointments efficiently
-- Provides secure login and booking verification
-- Creates a smoother experience for both customers and salon owners
-
----
-
-## Features
-
-- Instant Appointment Booking
-- QR Booking Verification
+- Instant salon appointment booking
+- QR-based booking verification
 - Google Authentication
 - Email OTP Login
-- Salon Dashboard
-- Booking Analytics
-- Responsive UI
-- Real-Time Booking Flow
+- Salon management dashboard
+- Appointment analytics
+- Responsive user interface
+- Real-time booking workflow
 
----
-
-## Tech Stack
+## Technology Stack
 
 ### Frontend
 - React
@@ -51,39 +37,31 @@ https://makemycut.vercel.app
 - Vercel
 - Netlify
 
----
+## Problem Statement
 
-## The Problem
+Traditional salon booking systems still rely heavily on walk-ins and manual phone-call reservations. This often leads to:
+- Long waiting queues
+- Inefficient appointment handling
+- Poor customer experience
+- Lack of real-time availability tracking
 
-Most salons still depend on walk-ins and phone calls, which creates:
-- long waiting times
-- poor appointment management
-- unnecessary crowding
-- frustrating customer experiences
-
-MakeMyCut aims to simplify the process with fast and reliable digital booking.
-
----
+MakeMyCut addresses these issues through a fast and accessible digital booking system.
 
 ## Vision
 
-Skip the wait. Book instantly.
+To modernize salon appointment management through a seamless and efficient booking experience.
 
----
+## Planned Improvements
 
-## Future Improvements
-
-- Online Payments
-- Customer Reviews & Ratings
-- AI-Based Queue Prediction
-- Salon Subscription Plans
-- Native Mobile App
-
----
+- Online payment integration
+- Customer reviews and ratings
+- AI-based queue prediction
+- Subscription plans for salons
+- Native mobile application
 
 ## Author
 
 Irfan Ahmed
 
-GitHub:
+GitHub  
 https://github.com/irfanahmed0019
