@@ -55,10 +55,19 @@ export default function CustomerAuth() {
           replace: true
         });
       } else {
-        // Customer - redirect to home
-        navigate('/', {
-          replace: true
-        });
+        // Check if user is an assigned barber (chair staff)
+        const { data: assignment } = await supabase
+          .from('barber_assignments')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (assignment) {
+          navigate('/barber-dashboard', { replace: true });
+        } else {
+          // Regular customer
+          navigate('/', { replace: true });
+        }
       }
     };
     handleRoleBasedRedirect();
