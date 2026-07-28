@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -247,9 +248,7 @@ export default function CustomerAuth() {
     }
   };
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-      </div>;
+    return <PageSkeleton />;
   }
   return <div className="min-h-screen flex flex-col justify-center bg-gradient-to-b from-[#0B0B0B] to-[#121212] px-6 py-12">
       <div className="w-full max-w-sm mx-auto">

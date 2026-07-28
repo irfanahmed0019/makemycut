@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -147,7 +148,7 @@ export default function SalonDashboard() {
   const bookingDates = allBookings.map((b) => parseISO(b.booking_date));
 
   if (loading || isLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div></div>;
+    return <PageSkeleton />;
   }
 
   if (showScanner) return <QRScanner onScan={handleQRScan} onClose={() => setShowScanner(false)} />;

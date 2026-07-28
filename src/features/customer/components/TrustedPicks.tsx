@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CardListSkeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { AreaSearchBar } from '@/features/directory/components/AreaSearchBar';
@@ -108,10 +109,11 @@ export const TrustedPicks = ({ onBookNow, onViewSalon, onJoinQueue }: TrustedPic
   if (isLoading) {
     return (
       <section className="pt-4">
-        <h2 className="text-2xl font-bold mb-4 text-center">Home</h2>
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="mb-6">
+          <AreaSearchBar />
         </div>
+        <h3 className="text-xl font-bold mb-4">Featured Salons</h3>
+        <CardListSkeleton count={4} />
       </section>
     );
   }
