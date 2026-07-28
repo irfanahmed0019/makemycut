@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PageSkeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { Bookings } from '@/features/customer/components/Bookings';
 import { TrustedPicks } from '@/features/customer/components/TrustedPicks';
