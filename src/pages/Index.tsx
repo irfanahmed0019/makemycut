@@ -8,6 +8,7 @@ import { ConfirmBooking } from '@/components/ConfirmBooking';
 import { BookingQRCode } from '@/components/BookingQRCode';
 
 import { LaunchCountdown } from '@/components/LaunchCountdown';
+import { PageSkeleton } from '@/components/ui/skeleton';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState<string>('home');
