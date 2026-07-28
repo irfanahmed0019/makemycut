@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ReviewListSkeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 

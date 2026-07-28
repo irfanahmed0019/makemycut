@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CardListSkeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { AreaSearchBar } from '@/features/directory/components/AreaSearchBar';
