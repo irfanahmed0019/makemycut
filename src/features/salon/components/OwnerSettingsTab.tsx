@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ChairsManager } from './ChairsManager';
 import { StaffManager } from './StaffManager';
+import { SectionSkeleton } from '@/components/ui/skeleton';
 
 interface OwnerSettingsTabProps {
   barberId: string;
@@ -71,7 +72,7 @@ export const OwnerSettingsTab = ({ barberId, barberName }: OwnerSettingsTabProps
     toast({ title: 'Service Deleted' });
   };
 
-  if (!settings || !barber) return <div className="py-8 text-center text-muted-foreground">Loading settings...</div>;
+  if (!settings || !barber) return <SectionSkeleton rows={5} />;
 
   return (
     <div className="space-y-4">
