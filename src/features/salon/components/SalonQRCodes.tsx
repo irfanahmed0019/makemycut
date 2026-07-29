@@ -84,19 +84,27 @@ export function SalonQRCodes({ salonId, salonName }: SalonQRCodesProps) {
     ctx.fillText(name, W / 2, 340);
 
     // Big action headline
-    const headline = variant === 'queue' ? 'SCAN TO JOIN THE QUEUE' : 'SCAN TO BOOK YOUR SLOT';
+    const headline =
+      variant === 'queue'
+        ? ["DON'T WASTE YOUR DAY IN LINE.", 'JOIN THE VIRTUAL QUEUE.']
+        : ["DON'T WANT TO WAIT IN LINE?"];
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '800 54px Poppins, sans-serif';
-    ctx.fillText(headline, W / 2, 445);
+    if (headline.length === 2) {
+      ctx.fillText(headline[0], W / 2, 420);
+      ctx.fillText(headline[1], W / 2, 480);
+    } else {
+      ctx.fillText(headline[0], W / 2, 445);
+    }
 
     // Sub caption
     ctx.fillStyle = 'rgba(255,255,255,0.55)';
     ctx.font = '400 26px Poppins, sans-serif';
     const sub =
       variant === 'queue'
-        ? 'No waiting in line. Track your turn from your phone.'
-        : 'Pick your time. Skip the wait. Walk right in.';
-    ctx.fillText(sub, W / 2, 490);
+        ? 'Scan • Track • Walk In'
+        : 'Reserve your chair before you arrive. Scan the QR code to book your appointment.';
+    ctx.fillText(sub, W / 2, 535);
 
     // QR panel (white rounded card)
     const qrPanel = { x: (W - 620) / 2, y: 545, w: 620, h: 620, r: 32 };
