@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
+import { SectionSkeleton } from '@/components/ui/skeleton';
 
 interface OwnerQueueTabProps {
   barberId: string;
@@ -70,7 +71,7 @@ export const OwnerQueueTab = ({ barberId }: OwnerQueueTabProps) => {
     toast({ title: newVal ? 'Queue Paused' : 'Queue Resumed' });
   };
 
-  if (isLoading) return <div className="py-8 text-center text-muted-foreground">Loading queue...</div>;
+  if (isLoading) return <SectionSkeleton rows={4} />;
 
   return (
     <div className="space-y-4">
