@@ -56,4 +56,16 @@ function ReviewListSkeleton({ count = 3 }: { count?: number }) {
   );
 }
 
-export { Skeleton, PageSkeleton, CardListSkeleton, ReviewListSkeleton };
+/** Compact section skeleton — for inline loading regions inside tabs/panels. */
+function SectionSkeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="space-y-3 py-4">
+      <Skeleton className="h-5 w-1/3" />
+      {Array.from({ length: rows }).map((_, i) => (
+        <Skeleton key={i} className="h-14 w-full rounded-lg" />
+      ))}
+    </div>
+  );
+}
+
+export { Skeleton, PageSkeleton, CardListSkeleton, ReviewListSkeleton, SectionSkeleton };
