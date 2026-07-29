@@ -187,11 +187,14 @@ export function SalonQRCodes({ salonId, salonName }: SalonQRCodesProps) {
     ref: React.RefObject<HTMLDivElement>,
     suffix: 'queue' | 'booking',
   ) => {
-    const headline = suffix === 'queue' ? 'SCAN TO JOIN THE QUEUE' : 'SCAN TO BOOK YOUR SLOT';
+    const headline =
+      suffix === 'queue'
+        ? ["DON'T WASTE YOUR DAY IN LINE.", 'JOIN THE VIRTUAL QUEUE.']
+        : ["DON'T WANT TO WAIT IN LINE?"];
     const sub =
       suffix === 'queue'
-        ? 'No waiting in line. Track your turn from your phone.'
-        : 'Pick your time. Skip the wait. Walk right in.';
+        ? 'Scan • Track • Walk In'
+        : 'Reserve your chair before you arrive. Scan the QR code to book your appointment.';
     return (
       <Card>
         <CardHeader>
