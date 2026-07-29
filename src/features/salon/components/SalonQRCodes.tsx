@@ -225,8 +225,16 @@ export function SalonQRCodes({ salonId, salonName }: SalonQRCodesProps) {
             </div>
 
             <div className="space-y-1">
-              <p className="text-white font-extrabold text-base tracking-wide">{headline}</p>
-              <p className="text-white/55 text-xs max-w-[240px] mx-auto">{sub}</p>
+              {Array.isArray(headline) ? (
+                headline.map((line, i) => (
+                  <p key={i} className="text-white font-extrabold text-base tracking-wide">
+                    {line}
+                  </p>
+                ))
+              ) : (
+                <p className="text-white font-extrabold text-base tracking-wide">{headline}</p>
+              )}
+              <p className="text-white/55 text-xs max-w-[260px] mx-auto">{sub}</p>
             </div>
 
             <div className="bg-white p-3 rounded-xl ring-2 ring-primary/70 shadow-[0_0_30px_-8px_hsl(var(--brand-red)/0.5)]">
