@@ -91,23 +91,23 @@ export function SalonQRCodes({ salonId, salonName }: SalonQRCodesProps) {
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '800 54px Poppins, sans-serif';
     if (headline.length === 2) {
-      ctx.fillText(headline[0], W / 2, 420);
-      ctx.fillText(headline[1], W / 2, 480);
+      ctx.fillText(headline[0], W / 2, 410);
+      ctx.fillText(headline[1], W / 2, 460);
     } else {
-      ctx.fillText(headline[0], W / 2, 445);
+      ctx.fillText(headline[0], W / 2, 435);
     }
 
     // Sub caption
     ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.font = '400 26px Poppins, sans-serif';
+    ctx.font = '400 22px Poppins, sans-serif';
     const sub =
       variant === 'queue'
         ? 'Scan • Track • Walk In'
         : 'Reserve your chair before you arrive. Scan the QR code to book your appointment.';
-    ctx.fillText(sub, W / 2, 535);
+    ctx.fillText(sub, W / 2, 515);
 
     // QR panel (white rounded card)
-    const qrPanel = { x: (W - 620) / 2, y: 545, w: 620, h: 620, r: 32 };
+    const qrPanel = { x: (W - 620) / 2, y: 560, w: 620, h: 620, r: 32 };
     ctx.fillStyle = '#FFFFFF';
     roundRect(ctx, qrPanel.x, qrPanel.y, qrPanel.w, qrPanel.h, qrPanel.r);
     ctx.fill();
