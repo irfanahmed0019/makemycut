@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { clearRoleCache } from '@/hooks/useUserRole';
 
 interface AuthContextType {
   user: User | null;
@@ -26,7 +27,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
+        setUser((prev) => {
+          const next = session?.user ?? null;
+          // Keep the same object identity across token refreshes so consumers
+          // don't re-run effects (and flash loading skeletons) every refresh.
+          if (prev && next && prev.id === next.id) return prev;
+          return next;
+        });
+        if (event === 'SIGNED_OUT') clearRoleCache();
         setLoading(false);
       }
     );
@@ -34,7 +42,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      setUser((prev) => {
+        const next = session?.user ?? null;
+        if (prev && next && prev.id === next.id) return prev;
+        return next;
+      });
       setLoading(false);
     }).catch((error) => {
       console.error('Error getting session:', error);
