@@ -36,6 +36,14 @@ type ActiveSession = {
 };
 
 const SESSION_KEY = 'mmc_barber_active_session_v1';
+const DATA_CACHE_KEY = 'mmc_barber_data_cache_v1';
+
+const readCache = () => {
+  try {
+    const raw = sessionStorage.getItem(DATA_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
 
 const fmtTime = (t: string) => {
   try {
@@ -51,13 +59,15 @@ export default function BarberDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [allQueue, setAllQueue] = useState<any[]>([]);
-  const [myBookings, setMyBookings] = useState<any[]>([]);
-  const [allBookings, setAllBookings] = useState<any[]>([]);
-  const [chairs, setChairs] = useState<any[]>([]);
-  const [requests, setRequests] = useState<any[]>([]);
-  const [profilesById, setProfilesById] = useState<Record<string, { full_name: string | null; phone: string | null }>>({});
-  const [completedToday, setCompletedToday] = useState(0);
+  const cache = readCache();
+  const [allQueue, setAllQueue] = useState<any[]>(cache?.allQueue ?? []);
+  const [myBookings, setMyBookings] = useState<any[]>(cache?.myBookings ?? []);
+  const [allBookings, setAllBookings] = useState<any[]>(cache?.allBookings ?? []);
+  const [chairs, setChairs] = useState<any[]>(cache?.chairs ?? []);
+  const [requests, setRequests] = useState<any[]>(cache?.requests ?? []);
+  const [profilesById, setProfilesById] = useState<Record<string, { full_name: string | null; phone: string | null }>>(cache?.profilesById ?? {});
+  const [completedToday, setCompletedToday] = useState<number>(cache?.completedToday ?? 0);
+  const [hydrated, setHydrated] = useState<boolean>(!!cache);
   const [active, setActive] = useState<ActiveSession | null>(() => {
     try { const raw = localStorage.getItem(SESSION_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
   });
@@ -101,18 +111,29 @@ export default function BarberDashboard() {
     ]);
     const bookings = (bAll || []) as any[];
     const userIds = Array.from(new Set(bookings.map((b) => b.user_id).filter(Boolean)));
+    let profileMap: Record<string, any> = {};
     if (userIds.length > 0) {
       const { data: profs } = await supabase.from('profiles').select('id, full_name, phone').in('id', userIds);
-      const map: Record<string, any> = {};
-      (profs || []).forEach((p: any) => { map[p.id] = { full_name: p.full_name, phone: p.phone }; });
-      setProfilesById(map);
-    } else { setProfilesById({}); }
-    setAllQueue(qAll || []);
-    setAllBookings(bookings);
-    setMyBookings(bookings.filter((b) => b.chair_id === chairId));
-    setChairs(cAll || []);
-    setRequests(reqs || []);
-    setCompletedToday((doneBookings || []).length);
+      (profs || []).forEach((p: any) => { profileMap[p.id] = { full_name: p.full_name, phone: p.phone }; });
+    }
+    const next = {
+      allQueue: qAll || [],
+      allBookings: bookings,
+      myBookings: bookings.filter((b) => b.chair_id === chairId),
+      chairs: cAll || [],
+      requests: reqs || [],
+      profilesById: profileMap,
+      completedToday: (doneBookings || []).length,
+    };
+    setProfilesById(next.profilesById);
+    setAllQueue(next.allQueue);
+    setAllBookings(next.allBookings);
+    setMyBookings(next.myBookings);
+    setChairs(next.chairs);
+    setRequests(next.requests);
+    setCompletedToday(next.completedToday);
+    setHydrated(true);
+    try { sessionStorage.setItem(DATA_CACHE_KEY, JSON.stringify(next)); } catch { /* ignore quota */ }
   };
 
   useEffect(() => {
@@ -191,11 +212,11 @@ export default function BarberDashboard() {
     fetchAll();
   };
 
-  if (authLoading || roleLoading) {
+  if ((authLoading || roleLoading) && !hydrated) {
     return <PageSkeleton />;
   }
 
-  if (role !== 'barber') {
+  if (role !== 'barber' && !roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 text-center">
         <div>
