@@ -43,36 +43,9 @@ export default function CustomerAuth() {
 
   // Role-based routing after authentication
   useEffect(() => {
-    const handleRoleBasedRedirect = async () => {
-      if (!user || loading) return;
-
-      // Check if user is a salon owner (has a barber shop)
-      const {
-        data: barberData
-      } = await supabase.from('barbers').select('id').eq('owner_id', user.id).maybeSingle();
-      if (barberData) {
-        // Salon owner - redirect to dashboard
-        navigate('/salon-dashboard', {
-          replace: true
-        });
-      } else {
-        // Check if user is an assigned barber (chair staff)
-        const { data: assignment } = await supabase
-          .from('barber_assignments')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .maybeSingle();
-        if (assignment) {
-          navigate('/barber-dashboard', { replace: true });
-        } else {
-          // Regular customer
-          navigate('/', { replace: true });
-        }
-      }
-    };
-    handleRoleBasedRedirect();
-  }, [user, loading, navigate]);
+    if (!user || loading || roleLoading) return;
+    navigate(homePathForRole(role), { replace: true });
+  }, [user, loading, roleLoading, role, navigate]);
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
