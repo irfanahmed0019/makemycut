@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AreaIndexProvider } from "./contexts/AreaIndexContext";
+import { RoleGate } from "./components/RoleGate";
 
 // Customer routes
 import CustomerHome from "@/features/customer/pages/CustomerHome";
@@ -44,10 +45,10 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 {/* Customer Routes */}
-                <Route path="/" element={<CustomerHome />} />
+                <Route path="/" element={<RoleGate allow={["customer"]} allowAnonymous><CustomerHome /></RoleGate>} />
                 <Route path="/auth" element={<CustomerAuth />} />
-                <Route path="/book" element={<SalonRedirect action="book" />} />
-                <Route path="/join-queue" element={<SalonRedirect action="queue" />} />
+                <Route path="/book" element={<RoleGate allow={["customer"]} allowAnonymous><SalonRedirect action="book" /></RoleGate>} />
+                <Route path="/join-queue" element={<RoleGate allow={["customer"]} allowAnonymous><SalonRedirect action="queue" /></RoleGate>} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/reviews" element={<Reviews />} />
 
@@ -57,13 +58,13 @@ const App = () => (
 
                 {/* Salon Routes */}
                 <Route path="/salon-login" element={<SalonAuth />} />
-                <Route path="/salon-dashboard" element={<SalonDashboard />} />
+                <Route path="/salon-dashboard" element={<RoleGate allow={["owner"]}><SalonDashboard /></RoleGate>} />
 
                 {/* Admin Routes */}
-                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin" element={<RoleGate allow={["admin"]}><AdminDashboard /></RoleGate>} />
 
                 {/* Barber Routes */}
-                <Route path="/barber-dashboard" element={<BarberDashboard />} />
+                <Route path="/barber-dashboard" element={<RoleGate allow={["barber"]}><BarberDashboard /></RoleGate>} />
 
                 {/* Catch-all */}
                 <Route path="*" element={<NotFound />} />
