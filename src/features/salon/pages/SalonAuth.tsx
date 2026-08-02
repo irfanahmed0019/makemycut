@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { useUserRole } from '@/hooks/useUserRole';
+import { homePathForRole } from '@/components/RoleGate';
 
 const signInSchema = z.object({
   email: z.string().trim().email('Invalid email address'),
@@ -21,36 +23,21 @@ export default function SalonAuth() {
   const [isCheckingSalon, setIsCheckingSalon] = useState(false);
   const [justSignedIn, setJustSignedIn] = useState(false);
   const { signIn, user, loading } = useAuth();
+  const { role, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    const checkSalonOwner = async () => {
-      if (user && !loading && justSignedIn) {
-        setIsCheckingSalon(true);
-        const { data: barber } = await supabase
-          .from('barbers')
-          .select('id')
-          .eq('owner_id', user.id)
-          .maybeSingle();
-        
-        if (barber) {
-          navigate('/salon-dashboard', { replace: true });
-        } else {
-          const { data: assignment } = await supabase
-            .from('barber_assignments').select('id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
-          if (assignment) {
-            navigate('/barber-dashboard', { replace: true });
-          } else {
-            toast({ variant: 'destructive', title: 'Access Denied', description: 'You are not registered as a salon owner or barber.' });
-          }
-        }
-        setIsCheckingSalon(false);
-        setJustSignedIn(false);
-      }
-    };
-    checkSalonOwner();
-  }, [user, loading, justSignedIn, navigate, toast]);
+    if (!user || loading || roleLoading || !justSignedIn) return;
+    setIsCheckingSalon(true);
+    if (role === 'customer') {
+      toast({ variant: 'destructive', title: 'Access Denied', description: 'You are not registered as a salon owner or barber.' });
+    } else {
+      navigate(homePathForRole(role), { replace: true });
+    }
+    setIsCheckingSalon(false);
+    setJustSignedIn(false);
+  }, [user, loading, roleLoading, role, justSignedIn, navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

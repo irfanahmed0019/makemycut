@@ -9,6 +9,8 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { useUserRole } from '@/hooks/useUserRole';
+import { homePathForRole } from '@/components/RoleGate';
 const signUpSchema = z.object({
   fullName: z.string().trim().min(2, 'Name must be at least 2 characters').max(100).regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
   phone: z.string().trim().regex(/^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/, 'Invalid phone number format'),
@@ -37,42 +39,16 @@ export default function CustomerAuth() {
     loading
   } = useAuth();
   const navigate = useNavigate();
+  const { role, loading: roleLoading } = useUserRole();
   const {
     toast
   } = useToast();
 
   // Role-based routing after authentication
   useEffect(() => {
-    const handleRoleBasedRedirect = async () => {
-      if (!user || loading) return;
-
-      // Check if user is a salon owner (has a barber shop)
-      const {
-        data: barberData
-      } = await supabase.from('barbers').select('id').eq('owner_id', user.id).maybeSingle();
-      if (barberData) {
-        // Salon owner - redirect to dashboard
-        navigate('/salon-dashboard', {
-          replace: true
-        });
-      } else {
-        // Check if user is an assigned barber (chair staff)
-        const { data: assignment } = await supabase
-          .from('barber_assignments')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .maybeSingle();
-        if (assignment) {
-          navigate('/barber-dashboard', { replace: true });
-        } else {
-          // Regular customer
-          navigate('/', { replace: true });
-        }
-      }
-    };
-    handleRoleBasedRedirect();
-  }, [user, loading, navigate]);
+    if (!user || loading || roleLoading) return;
+    navigate(homePathForRole(role), { replace: true });
+  }, [user, loading, roleLoading, role, navigate]);
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
