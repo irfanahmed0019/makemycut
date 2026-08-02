@@ -9,6 +9,8 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { useUserRole } from '@/hooks/useUserRole';
+import { homePathForRole } from '@/components/RoleGate';
 const signUpSchema = z.object({
   fullName: z.string().trim().min(2, 'Name must be at least 2 characters').max(100).regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
   phone: z.string().trim().regex(/^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/, 'Invalid phone number format'),
@@ -37,6 +39,7 @@ export default function CustomerAuth() {
     loading
   } = useAuth();
   const navigate = useNavigate();
+  const { role, loading: roleLoading } = useUserRole();
   const {
     toast
   } = useToast();
