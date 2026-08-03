@@ -18,13 +18,13 @@ export const SalonDetail = ({ salon, onBookAppointment, onJoinQueue, onBack }: S
 
   useEffect(() => {
     const fetch = async () => {
-      const [{ data: svcData }, { count: queueCount }, { data: settingsData }] = await Promise.all([
+      const [{ data: svcData }, { data: queueRows }, { data: settingsData }] = await Promise.all([
         supabase.from('services').select('*').eq('barber_id', salon.id).eq('is_active', true).order('order_index'),
-        supabase.from('queues').select('id', { count: 'exact', head: true }).eq('salon_id', salon.id).eq('status', 'waiting'),
+        (supabase as any).rpc('get_queue_list', { p_salon_id: salon.id }),
         supabase.from('salon_settings').select('*').eq('salon_id', salon.id).maybeSingle(),
       ]);
       setServices(svcData || []);
-      setQueueLength(queueCount || 0);
+      setQueueLength((queueRows || []).length);
       setSettings(settingsData);
     };
     fetch();
