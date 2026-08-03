@@ -418,6 +418,41 @@ export type Database = {
           },
         ]
       }
+      salon_time_slots: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          salon_id: string
+          slot_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          salon_id: string
+          slot_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          salon_id?: string
+          slot_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salon_time_slots_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       services: {
         Row: {
           barber_id: string | null
@@ -635,6 +670,15 @@ export type Database = {
               chair_id: string
             }[]
           }
+      get_queue_list: {
+        Args: { p_salon_id: string }
+        Returns: {
+          display_name: string
+          entry_id: string
+          queue_position: number
+          status: string
+        }[]
+      }
       get_queue_status: {
         Args: { p_salon_id: string; p_user_id: string }
         Returns: {
@@ -662,36 +706,21 @@ export type Database = {
         }
         Returns: boolean
       }
-      join_queue:
-        | {
-            Args: {
-              p_customer_name: string
-              p_customer_phone: string
-              p_salon_id: string
-              p_service_id: string
-              p_user_id?: string
-            }
-            Returns: {
-              estimated_wait: number
-              queue_id: string
-              queue_pos: number
-            }[]
-          }
-        | {
-            Args: {
-              p_chair_id?: string
-              p_customer_name: string
-              p_customer_phone: string
-              p_salon_id: string
-              p_service_id: string
-              p_user_id?: string
-            }
-            Returns: {
-              estimated_wait: number
-              queue_id: string
-              queue_pos: number
-            }[]
-          }
+      join_queue: {
+        Args: {
+          p_chair_id?: string
+          p_customer_name: string
+          p_customer_phone: string
+          p_salon_id: string
+          p_service_id: string
+          p_user_id?: string
+        }
+        Returns: {
+          estimated_wait: number
+          queue_id: string
+          queue_pos: number
+        }[]
+      }
       leave_queue: {
         Args: { p_queue_id: string; p_user_id: string }
         Returns: boolean
