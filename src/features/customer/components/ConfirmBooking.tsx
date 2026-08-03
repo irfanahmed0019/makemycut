@@ -5,7 +5,7 @@ import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameD
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookingGateModal } from './BookingGateModal';
-import { fetchBookedSlots, to24h } from '../lib/slotAvailability';
+import { fetchBookedSlots, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS } from '../lib/slotAvailability';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -26,13 +26,6 @@ interface ConfirmBookingProps {
   onConfirm: (booking: any) => void;
 }
 
-const timeSlots = [
-  '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', 
-  '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM',
-  '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM',
-  '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM'
-];
-
 export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -46,6 +39,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
   const [chairs, setChairs] = useState<any[]>([]);
   const [selectedChair, setSelectedChair] = useState<string>('');
+  const [timeSlots, setTimeSlots] = useState<string[]>(DEFAULT_TIME_SLOTS);
 
   // Capture install prompt
   useEffect(() => {
@@ -61,6 +55,17 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     fetchServices();
     fetchChairs();
   }, [barber]);
+
+  // Salon-configured bookable times
+  useEffect(() => {
+    let active = true;
+    fetchSalonTimeSlots(barber.id).then((slots) => {
+      if (!active) return;
+      setTimeSlots(slots);
+      setSelectedTime((prev) => (slots.includes(prev) ? prev : slots[0] || prev));
+    });
+    return () => { active = false; };
+  }, [barber.id]);
 
   // Fetch slot states + realtime subscription to bookings changes
   useEffect(() => {
