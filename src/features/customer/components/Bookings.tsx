@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { fetchBookedSlots, isSlotTaken, to12h, to24h } from '../lib/slotAvailability';
+import { fetchBookedSlots, isSlotTaken, to12h, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS } from '../lib/slotAvailability';
 
 interface Booking {
   id: string;
