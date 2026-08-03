@@ -220,6 +220,16 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reschedDate, rescheduleTarget?.id]);
 
+  // Load the salon's configured time slots when a reschedule starts
+  useEffect(() => {
+    if (!rescheduleTarget?.barber_id) return;
+    let active = true;
+    fetchSalonTimeSlots(rescheduleTarget.barber_id).then((slots) => {
+      if (active) setTimeSlots(slots);
+    });
+    return () => { active = false; };
+  }, [rescheduleTarget?.barber_id]);
+
   useEffect(() => {
     if (!rescheduleTarget?.barber_id) return;
     const ch = supabase
