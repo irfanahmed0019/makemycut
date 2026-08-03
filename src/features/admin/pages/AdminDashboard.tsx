@@ -12,6 +12,7 @@ import { AdminSalons } from '../components/AdminSalons';
 import { AdminBookings } from '../components/AdminBookings';
 import { AdminQueues } from '../components/AdminQueues';
 import { AdminServicesManager } from '../components/AdminServicesManager';
+import { AdminTimeSlots } from '../components/AdminTimeSlots';
 
 export default function AdminDashboard() {
   const { isAdmin, loading } = useAdminCheck();
@@ -98,11 +99,13 @@ export default function AdminDashboard() {
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
               <TabsTrigger value="queue">Queue</TabsTrigger>
               <TabsTrigger value="services">Services</TabsTrigger>
+              <TabsTrigger value="slots">Slots</TabsTrigger>
             </TabsList>
             <TabsContent value="salons"><AdminSalons /></TabsContent>
             <TabsContent value="bookings"><AdminBookings /></TabsContent>
             <TabsContent value="queue"><AdminQueues /></TabsContent>
             <TabsContent value="services"><AdminServicesManager /></TabsContent>
+            <TabsContent value="slots"><AdminTimeSlots /></TabsContent>
           </Tabs>
         </main>
       </div>

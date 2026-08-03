@@ -7,7 +7,15 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { SectionSkeleton } from '@/components/ui/skeleton';
-import { to12h } from '@/features/customer/lib/slotAvailability';
+
+const to12h = (t: string): string => {
+  const [hStr, mStr] = t.split(':');
+  let h = parseInt(hStr, 10);
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return `${h}:${mStr} ${suffix}`;
+};
 
 interface Slot {
   id: string;
