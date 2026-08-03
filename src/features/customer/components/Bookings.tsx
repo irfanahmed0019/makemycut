@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { fetchBookedSlots, isSlotTaken, to12h, to24h } from '../lib/slotAvailability';
+import { fetchBookedSlots, isSlotTaken, to12h, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS } from '../lib/slotAvailability';
 
 interface Booking {
   id: string;
@@ -39,13 +39,6 @@ interface BookingsProps {
   onOpenQueueStatus?: (queue: { queueId: string; position: number; estimatedWait: number; salonId: string; salonName: string }) => void;
 }
 
-const timeSlots = [
-  '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
-  '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM',
-  '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM',
-  '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM'
-];
-
 export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [historyBookings, setHistoryBookings] = useState<Booking[]>([]);
@@ -60,6 +53,7 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
   const [reschedTime, setReschedTime] = useState<string>('10:00 AM');
   const [reschedBooked, setReschedBooked] = useState<Set<string>>(new Set());
   const [rescheduling, setRescheduling] = useState(false);
+  const [timeSlots, setTimeSlots] = useState<string[]>(DEFAULT_TIME_SLOTS);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -147,21 +141,20 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
 
     const q = activeQueues[0];
 
-    const [{ data: salon }, { count: aheadCount }, { data: settings }, { data: queueRows }] = await Promise.all([
+    const [{ data: salon }, { data: settings }, { data: queueRows }] = await Promise.all([
       supabase.from('barbers').select('name').eq('id', q.salon_id).maybeSingle(),
-      supabase.from('queues').select('id', { count: 'exact', head: true })
-        .eq('salon_id', q.salon_id).in('status', ['waiting', 'serving']).gte('joined_at', todayIso).lt('queue_position', q.queue_position),
       supabase.from('salon_settings').select('wait_per_customer').eq('salon_id', q.salon_id).maybeSingle(),
-      supabase.from('queues').select('id, queue_position, customer_name').eq('salon_id', q.salon_id).in('status', ['waiting', 'serving']).gte('joined_at', todayIso).order('queue_position', { ascending: true }),
+      (supabase as any).rpc('get_queue_list', { p_salon_id: q.salon_id }),
     ]);
 
-    const ahead = aheadCount || 0;
+    const rows: Array<{ entry_id: string; queue_position: number; display_name: string }> = queueRows || [];
+    const ahead = rows.filter((r) => r.queue_position < q.queue_position).length;
     const waitPer = settings?.wait_per_customer || 20;
 
-    setQueueList((queueRows || []).map((row) => ({
+    setQueueList(rows.map((row) => ({
       position: row.queue_position,
-      name: maskName(row.customer_name),
-      isMe: row.id === q.id,
+      name: maskName(row.display_name),
+      isMe: row.entry_id === q.id,
     })));
 
     setActiveQueue({
@@ -226,6 +219,16 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
     if (rescheduleTarget) fetchReschedSlots(rescheduleTarget, reschedDate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reschedDate, rescheduleTarget?.id]);
+
+  // Load the salon's configured time slots when a reschedule starts
+  useEffect(() => {
+    if (!rescheduleTarget?.barber_id) return;
+    let active = true;
+    fetchSalonTimeSlots(rescheduleTarget.barber_id).then((slots) => {
+      if (active) setTimeSlots(slots);
+    });
+    return () => { active = false; };
+  }, [rescheduleTarget?.barber_id]);
 
   useEffect(() => {
     if (!rescheduleTarget?.barber_id) return;

@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ChairsManager } from './ChairsManager';
 import { StaffManager } from './StaffManager';
+import { TimeSlotsManager } from '@/components/salon/TimeSlotsManager';
 import { SectionSkeleton } from '@/components/ui/skeleton';
 
 interface OwnerSettingsTabProps {
@@ -81,6 +82,9 @@ export const OwnerSettingsTab = ({ barberId, barberName }: OwnerSettingsTabProps
 
       {/* Staff */}
       <StaffManager salonId={barberId} />
+
+      {/* Booking time slots */}
+      <TimeSlotsManager salonId={barberId} />
 
       {/* Salon Info */}
       <Card>

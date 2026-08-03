@@ -24,6 +24,29 @@ export const to24h = (t: string): string => {
 // MUST be identical between booking and reschedule flows.
 export const OCCUPYING_STATUSES = ['upcoming', 'CONFIRMED', 'ON_HOLD', 'pending', 'completed'];
 
+// Fallback slots used only when a salon has no configured slots yet.
+export const DEFAULT_TIME_SLOTS = [
+  '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+  '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM',
+  '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM',
+  '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM',
+];
+
+/**
+ * Salon-configurable bookable times (12h display strings), managed by the
+ * salon owner / admin in the dashboard. Falls back to the standard set.
+ */
+export const fetchSalonTimeSlots = async (salonId: string): Promise<string[]> => {
+  const { data, error } = await (supabase as any)
+    .from('salon_time_slots')
+    .select('slot_time, is_active')
+    .eq('salon_id', salonId)
+    .eq('is_active', true)
+    .order('slot_time');
+  if (error || !data || data.length === 0) return DEFAULT_TIME_SLOTS;
+  return (data as Array<{ slot_time: string }>).map((r) => to12h(r.slot_time));
+};
+
 /**
  * Fetches the set of booked slots (12h display strings) for a given barber/date.
  * Optionally excludes a specific booking id (used during reschedule so the

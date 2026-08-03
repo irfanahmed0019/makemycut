@@ -34,7 +34,7 @@ export const QueueStatus = ({ queueId, salonName, initialPosition, initialWait, 
     todayStart.setHours(0, 0, 0, 0);
     const todayIso = todayStart.toISOString();
 
-    // Authoritative entry by id
+    // Authoritative entry by id (own row is visible under RLS)
     const { data: entry } = await supabase
       .from('queues')
       .select('queue_position, status, salon_id')
@@ -47,22 +47,21 @@ export const QueueStatus = ({ queueId, salonName, initialPosition, initialWait, 
 
     if (entry.status !== 'waiting' && entry.status !== 'serving') return;
 
-    const { data: rows } = await supabase
-      .from('queues')
-      .select('id, queue_position, customer_name')
-      .eq('salon_id', entry.salon_id)
-      .in('status', ['waiting', 'serving'])
-      .gte('joined_at', todayIso)
-      .order('queue_position', { ascending: true });
+    // Full salon queue via SECURITY DEFINER RPC (first names only) — a direct
+    // select is blocked by RLS and would always return just this user's row.
+    const { data: rows } = await (supabase as any).rpc('get_queue_list', {
+      p_salon_id: entry.salon_id,
+    });
 
-    const list = (rows || []).map(r => ({
+    const entries: Array<{ entry_id: string; queue_position: number; display_name: string }> = rows || [];
+
+    setQueueList(entries.map(r => ({
       position: r.queue_position,
-      name: maskName(r.customer_name),
-      isMe: r.id === queueId,
-    }));
-    setQueueList(list);
+      name: maskName(r.display_name),
+      isMe: r.entry_id === queueId,
+    })));
 
-    const ahead = (rows || []).filter(r => r.queue_position < entry.queue_position).length;
+    const ahead = entries.filter(r => r.queue_position < entry.queue_position).length;
     setPosition(entry.queue_position);
 
     const { data: settings } = await supabase
