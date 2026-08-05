@@ -342,8 +342,9 @@ export default function BarberDashboard() {
         )}
 
         <Tabs defaultValue="mine">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="mine">My Queue ({myFeed.length + (active ? 1 : 0)})</TabsTrigger>
+            <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="all">All Chairs</TabsTrigger>
             <TabsTrigger value="summary">Today</TabsTrigger>
           </TabsList>
