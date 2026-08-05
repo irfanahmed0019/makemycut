@@ -53,6 +53,18 @@ const fmtTime = (t: string) => {
   } catch { return t; }
 };
 
+const dateKey = (offset: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const DAY_TABS = [
+  { offset: 0, label: 'Today' },
+  { offset: 1, label: 'Tomorrow' },
+  { offset: 2, label: 'Day After' },
+];
+
 export default function BarberDashboard() {
   const { user, signOut, loading: authLoading } = useAuth();
   const { role, chairId, salonId, loading: roleLoading } = useUserRole();
@@ -63,6 +75,8 @@ export default function BarberDashboard() {
   const [allQueue, setAllQueue] = useState<any[]>(cache?.allQueue ?? []);
   const [myBookings, setMyBookings] = useState<any[]>(cache?.myBookings ?? []);
   const [allBookings, setAllBookings] = useState<any[]>(cache?.allBookings ?? []);
+  const [dayBookings, setDayBookings] = useState<any[]>(cache?.dayBookings ?? []);
+  const [dayOffset, setDayOffset] = useState<number>(0);
   const [chairs, setChairs] = useState<any[]>(cache?.chairs ?? []);
   const [requests, setRequests] = useState<any[]>(cache?.requests ?? []);
   const [profilesById, setProfilesById] = useState<Record<string, { full_name: string | null; phone: string | null }>>(cache?.profilesById ?? {});
@@ -91,7 +105,7 @@ export default function BarberDashboard() {
   const fetchAll = async () => {
     if (!salonId) return;
     const today = new Date().toISOString().slice(0, 10);
-    const [{ data: qAll }, { data: bAll }, { data: cAll }, { data: reqs }, { data: doneBookings }] = await Promise.all([
+    const [{ data: qAll }, { data: bAll }, { data: cAll }, { data: reqs }, { data: doneBookings }, { data: bDays }] = await Promise.all([
       supabase.from('queues')
         .select('*, services:service_id(name), chairs:chair_id(chair_number, name)')
         .eq('salon_id', salonId)
@@ -108,9 +122,15 @@ export default function BarberDashboard() {
       supabase.from('bookings').select('id')
         .eq('barber_id', salonId).eq('booking_date', today)
         .eq('chair_id', chairId as any).eq('status', 'completed'),
+      supabase.from('bookings')
+        .select('id, user_id, chair_id, booking_date, booking_time, status, services:service_id(name, price, duration_minutes)')
+        .eq('barber_id', salonId)
+        .in('booking_date', [dateKey(0), dateKey(1), dateKey(2)])
+        .order('booking_time', { ascending: true }),
     ]);
     const bookings = (bAll || []) as any[];
-    const userIds = Array.from(new Set(bookings.map((b) => b.user_id).filter(Boolean)));
+    const days = (bDays || []) as any[];
+    const userIds = Array.from(new Set([...bookings, ...days].map((b) => b.user_id).filter(Boolean)));
     let profileMap: Record<string, any> = {};
     if (userIds.length > 0) {
       const { data: profs } = await supabase.from('profiles').select('id, full_name, phone').in('id', userIds);
@@ -120,6 +140,7 @@ export default function BarberDashboard() {
       allQueue: qAll || [],
       allBookings: bookings,
       myBookings: bookings.filter((b) => b.chair_id === chairId),
+      dayBookings: days,
       chairs: cAll || [],
       requests: reqs || [],
       profilesById: profileMap,
@@ -129,6 +150,7 @@ export default function BarberDashboard() {
     setAllQueue(next.allQueue);
     setAllBookings(next.allBookings);
     setMyBookings(next.myBookings);
+    setDayBookings(next.dayBookings);
     setChairs(next.chairs);
     setRequests(next.requests);
     setCompletedToday(next.completedToday);
@@ -209,6 +231,16 @@ export default function BarberDashboard() {
       await supabase.from('queues').update({ status: 'waiting', updated_at: new Date().toISOString() }).eq('id', active.queueId);
     }
     setActive(null);
+    fetchAll();
+  };
+
+  const setBookingStatus = async (bookingId: string, status: 'completed' | 'no-show') => {
+    const { error } = await supabase.from('bookings')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', bookingId);
+    if (error) { toast({ variant: 'destructive', title: 'Update failed', description: error.message }); return; }
+    setDayBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status } : b)));
+    toast({ title: status === 'completed' ? 'Marked as served' : 'Marked as no-show' });
     fetchAll();
   };
 
