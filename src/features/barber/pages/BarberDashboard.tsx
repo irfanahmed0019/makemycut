@@ -433,6 +433,7 @@ export default function BarberDashboard() {
           </TabsContent>
 
           <TabsContent value="all" className="space-y-4 mt-4">
+            {null}
             {chairs.map((c) => (
               <Card key={c.id}>
                 <CardHeader className="pb-2">
