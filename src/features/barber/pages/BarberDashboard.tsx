@@ -432,8 +432,69 @@ export default function BarberDashboard() {
             )}
           </TabsContent>
 
+          <TabsContent value="bookings" className="space-y-3 mt-4">
+            <div className="grid grid-cols-3 gap-2">
+              {DAY_TABS.map((d) => (
+                <Button
+                  key={d.offset}
+                  size="sm"
+                  variant={dayOffset === d.offset ? 'default' : 'outline'}
+                  onClick={() => setDayOffset(d.offset)}
+                >
+                  {d.label}
+                </Button>
+              ))}
+            </div>
+
+            {(() => {
+              const key = dateKey(dayOffset);
+              const list = dayBookings
+                .filter((b) => b.booking_date === key)
+                .sort((a, b) => String(a.booking_time).localeCompare(String(b.booking_time)));
+              if (list.length === 0) {
+                return <p className="text-center text-muted-foreground py-8">No bookings for this day.</p>;
+              }
+              return list.map((b) => {
+                const prof = profilesById[b.user_id];
+                const done = b.status === 'completed' || b.status === 'no-show' || b.status === 'cancelled';
+                return (
+                  <Card key={b.id}>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-bold text-base">{prof?.full_name || 'Customer'}</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {b.services?.name || 'Service'} · {fmtTime(b.booking_time)}
+                          </p>
+                          {prof?.phone && <p className="text-xs text-muted-foreground">{prof.phone}</p>}
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={
+                            b.status === 'completed'
+                              ? 'border-green-500/50 text-green-500 uppercase text-[10px] tracking-wider'
+                              : b.status === 'no-show' || b.status === 'cancelled'
+                              ? 'border-destructive/50 text-destructive uppercase text-[10px] tracking-wider'
+                              : 'border-primary/40 text-primary uppercase text-[10px] tracking-wider'
+                          }
+                        >
+                          {b.status === 'completed' ? 'Served' : b.status === 'no-show' ? 'No-show' : b.status}
+                        </Badge>
+                      </div>
+                      {!done && (
+                        <div className="flex gap-2">
+                          <Button size="sm" className="flex-1" onClick={() => setBookingStatus(b.id, 'completed')}>Served</Button>
+                          <Button size="sm" variant="destructive" className="flex-1" onClick={() => setBookingStatus(b.id, 'no-show')}>No-show</Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              });
+            })()}
+          </TabsContent>
+
           <TabsContent value="all" className="space-y-4 mt-4">
-            {null}
             {chairs.map((c) => (
               <Card key={c.id}>
                 <CardHeader className="pb-2">
