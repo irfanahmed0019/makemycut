@@ -34,6 +34,14 @@ export default defineConfig(({ mode }) => ({
         launch_handler: { client_mode: ["navigate-existing", "auto"] },
         handle_links: "preferred",
         ...({ capture_links: "existing-client-navigate" } as Record<string, unknown>),
+        // Lets Chrome report this PWA via navigator.getInstalledRelatedApps(),
+        // so the site knows when the installed app already exists.
+        prefer_related_applications: false,
+        ...({
+          related_applications: [
+            { platform: "webapp", url: "/manifest.webmanifest" },
+          ],
+        } as Record<string, unknown>),
         shortcuts: [
           {
             name: "Book a slot",
