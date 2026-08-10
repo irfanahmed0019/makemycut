@@ -781,6 +781,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_reset_salon_data: { Args: { p_salon_id: string }; Returns: Json }
       admin_search_users: {
         Args: { p_query: string }
         Returns: {
