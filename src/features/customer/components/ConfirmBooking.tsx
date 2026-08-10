@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookingGateModal } from './BookingGateModal';
 import { fetchBookedSlots, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS } from '../lib/slotAvailability';
+import { reportError } from '@/lib/monitoring';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -175,6 +176,11 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
 
     if (error) {
       const msg = typeof error === 'string' ? error : error?.message || '';
+      reportError('booking', msg || 'create-booking failed', {
+        barber_id: barber.id,
+        booking_date: dateStr,
+        booking_time: time24,
+      });
       if (msg.includes('BOOKING_LIMIT') || msg.includes('Maximum 2')) {
         toast({ variant: 'destructive', title: 'Booking Limit Reached', description: 'Maximum 2 active bookings allowed.' });
       } else if (msg.includes('Rate limit')) {

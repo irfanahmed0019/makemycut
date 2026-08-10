@@ -242,6 +242,27 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_payment_details: {
+        Row: {
+          created_at: string
+          updated_at: string
+          upi_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          updated_at?: string
+          upi_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          updated_at?: string
+          upi_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -252,7 +273,6 @@ export type Database = {
           referral_code: string | null
           trust_score: number | null
           updated_at: string | null
-          upi_id: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -263,7 +283,6 @@ export type Database = {
           referral_code?: string | null
           trust_score?: number | null
           updated_at?: string | null
-          upi_id?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -274,7 +293,6 @@ export type Database = {
           referral_code?: string | null
           trust_score?: number | null
           updated_at?: string | null
-          upi_id?: string | null
         }
         Relationships: []
       }

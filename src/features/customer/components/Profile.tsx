@@ -43,7 +43,10 @@ export const Profile = () => {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+      const [{ data }, { data: pay }] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+        (supabase as any).from('profile_payment_details').select('upi_id').eq('user_id', user.id).maybeSingle(),
+      ]);
       if (data) {
         const refCode = data.referral_code || `MMC-${user.id.slice(0, 4).toUpperCase()}`;
         if (!data.referral_code) {
@@ -53,12 +56,12 @@ export const Profile = () => {
           full_name: data.full_name || '',
           phone: data.phone || '',
           trust_score: data.trust_score == null ? null : Number(data.trust_score),
-          upi_id: (data as any).upi_id || '',
+          upi_id: pay?.upi_id || '',
           referral_code: refCode,
           avatar_url: data.avatar_url || '',
         });
         setEditName(data.full_name || '');
-        setUpiInput((data as any).upi_id || '');
+        setUpiInput(pay?.upi_id || '');
       }
     })();
   }, [user]);
@@ -97,7 +100,9 @@ export const Profile = () => {
     if (!user) return;
     if (!isUpi(upiInput)) { toast({ variant: 'destructive', title: 'Invalid UPI ID', description: 'Format: name@bank' }); return; }
     setSavingUpi(true);
-    const { error } = await supabase.from('profiles').update({ upi_id: upiInput.trim() } as any).eq('id', user.id);
+    const { error } = await (supabase as any)
+      .from('profile_payment_details')
+      .upsert({ user_id: user.id, upi_id: upiInput.trim() }, { onConflict: 'user_id' });
     setSavingUpi(false);
     if (error) { toast({ variant: 'destructive', title: 'Save failed', description: error.message }); return; }
     setProfile((p) => ({ ...p, upi_id: upiInput.trim() }));

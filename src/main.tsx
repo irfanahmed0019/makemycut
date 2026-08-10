@@ -3,6 +3,9 @@ import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 import { registerServiceWorker } from "./pwa";
+import { initMonitoring } from "./lib/monitoring";
+
+initMonitoring();
 
 createRoot(document.getElementById("root")!).render(
   <HelmetProvider>
