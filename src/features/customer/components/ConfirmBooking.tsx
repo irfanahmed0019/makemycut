@@ -193,6 +193,17 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
 
     // Use the full booking object from edge function response
     if (fnResponse?.booking) {
+      const b = fnResponse.booking;
+      if (user?.id) {
+        sendPush({
+          userId: user.id,
+          title: 'Appointment confirmed',
+          body: `Your appointment at ${barber.name} is confirmed for ${b.booking_time}.`,
+          url: '/',
+          appointmentId: b.id,
+          notificationType: 'appointment_confirmed',
+        });
+      }
       onConfirm(fnResponse.booking);
     }
   };
