@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AreaSearchBar } from '@/features/directory/components/AreaSearchBar';
 import { TrustSection } from '@/features/directory/components/TrustSection';
 import { FaqSection } from '@/features/directory/components/FaqSection';
+import { useRatingsEnabled } from '@/hooks/useRatingsEnabled';
 
 interface Barber {
   id: string;
@@ -26,6 +27,7 @@ export const TrustedPicks = ({ onBookNow, onViewSalon, onJoinQueue }: TrustedPic
   const [salons, setSalons] = useState<Barber[]>([]);
   const [settings, setSettings] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const ratingsEnabled = useRatingsEnabled();
 
   useEffect(() => {
     const fetchSalons = async () => {
