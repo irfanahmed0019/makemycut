@@ -102,14 +102,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       password
     });
 
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Sign in failed",
-        description: error.message
-      });
-    }
-
+    // NOTE: the caller decides how to surface the failure (salon vs customer
+    // login show different guidance), so we do not toast here — that produced
+    // duplicate/misleading "Sign in failed" toasts.
     return { error };
   };
 
