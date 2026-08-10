@@ -50,7 +50,7 @@ export const useUserRole = () => {
   const userId = user?.id ?? null;
   const cached = userId ? roleCache.get(userId) : null;
   const [info, setInfo] = useState<RoleInfo>(cached ?? { role: 'customer', chairId: null, salonId: null });
-  const [loading, setLoading] = useState(!cached);
+  const [resolvedFor, setResolvedFor] = useState<string | null>(cached ? userId : null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -62,20 +62,19 @@ export const useUserRole = () => {
     if (authLoading) return;
     if (!userId) {
       setInfo({ role: 'customer', chairId: null, salonId: null });
-      setLoading(false);
+      setResolvedFor(null);
       return;
     }
     const hit = roleCache.get(userId);
     if (hit) {
       setInfo(hit);
-      setLoading(false);
+      setResolvedFor(userId);
       return;
     }
-    setLoading(true);
     loadRole(userId).then((res) => {
       if (!mounted.current) return;
       setInfo(res);
-      setLoading(false);
+      setResolvedFor(userId);
     });
     // Only depends on the user id — token refreshes create a new user object
     // but must not re-trigger a role lookup (that caused the loading flicker).
@@ -85,7 +84,7 @@ export const useUserRole = () => {
     role: info.role,
     chairId: info.chairId,
     salonId: info.salonId,
-    loading: loading || authLoading || (!!userId && !roleCache.get(userId) && !cached),
+    loading: authLoading || (!!userId && resolvedFor !== userId),
     user,
   };
 };
