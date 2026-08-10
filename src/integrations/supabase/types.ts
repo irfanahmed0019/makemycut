@@ -104,6 +104,35 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_reminders: {
+        Row: {
+          booking_id: string
+          id: string
+          offset_minutes: number
+          sent_at: string
+        }
+        Insert: {
+          booking_id: string
+          id?: string
+          offset_minutes: number
+          sent_at?: string
+        }
+        Update: {
+          booking_id?: string
+          id?: string
+          offset_minutes?: number
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_reminders_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           barber_id: string
