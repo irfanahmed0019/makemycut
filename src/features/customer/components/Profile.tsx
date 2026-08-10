@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { NotificationSettings } from './NotificationSettings';
 import { InstallAppCard } from './InstallAppCard';
 
@@ -57,6 +58,7 @@ export const Profile = () => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
+  const { isAdmin } = useAdminCheck();
 
   useEffect(() => {
     if (!user) return;
@@ -347,10 +349,13 @@ export const Profile = () => {
               <span>Two-Factor Auth</span>
               <Badge variant="secondary">Coming Soon</Badge>
             </div>
-            <button onClick={() => { setPrivacyOpen(false); setDeleteOpen(true); }} className="w-full flex items-center justify-between p-3 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive">
-              <span>Delete Account</span>
-              <span className="material-symbols-outlined">chevron_right</span>
-            </button>
+            {/* Account deletion is disabled for customers; only admins can use it. */}
+            {isAdmin && (
+              <button onClick={() => { setPrivacyOpen(false); setDeleteOpen(true); }} className="w-full flex items-center justify-between p-3 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive">
+                <span>Delete Account</span>
+                <span className="material-symbols-outlined">chevron_right</span>
+              </button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
