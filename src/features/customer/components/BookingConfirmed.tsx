@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { EnableNotificationsPrompt } from './EnableNotificationsPrompt';
 
 interface BookingConfirmedProps {
   booking: {
@@ -70,6 +71,8 @@ export const BookingConfirmed = ({ booking, onBack }: BookingConfirmedProps) => 
           <p className="text-xs text-muted-foreground text-center">
             Booking ID: {booking.id.slice(0, 8)}
           </p>
+
+          <EnableNotificationsPrompt />
         </div>
 
         {onBack && (

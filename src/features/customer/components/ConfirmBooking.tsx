@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BookingGateModal } from './BookingGateModal';
 import { fetchBookedSlots, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS } from '../lib/slotAvailability';
 import { reportError } from '@/lib/monitoring';
+import { sendPush } from '@/lib/notify';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -193,6 +194,17 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
 
     // Use the full booking object from edge function response
     if (fnResponse?.booking) {
+      const b = fnResponse.booking;
+      if (user?.id) {
+        sendPush({
+          userId: user.id,
+          title: 'Appointment confirmed',
+          body: `Your appointment at ${barber.name} is confirmed for ${b.booking_time}.`,
+          url: '/',
+          appointmentId: b.id,
+          notificationType: 'appointment_confirmed',
+        });
+      }
       onConfirm(fnResponse.booking);
     }
   };
