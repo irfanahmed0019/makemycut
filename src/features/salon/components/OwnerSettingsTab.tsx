@@ -12,6 +12,7 @@ import { StaffManager } from './StaffManager';
 import { TimeSlotsManager } from '@/components/salon/TimeSlotsManager';
 import { TomorrowRemindersCard } from './TomorrowRemindersCard';
 import { SectionSkeleton } from '@/components/ui/skeleton';
+import { SalonImageUploader } from '@/components/salon/SalonImageUploader';
 
 interface OwnerSettingsTabProps {
   barberId: string;
@@ -94,6 +95,11 @@ export const OwnerSettingsTab = ({ barberId, barberName }: OwnerSettingsTabProps
       <Card>
         <CardHeader><CardTitle className="text-lg">Salon Information</CardTitle></CardHeader>
         <CardContent className="space-y-3">
+          <SalonImageUploader
+            salonId={barberId}
+            imageUrl={barber.image_url ?? null}
+            onUploaded={(url) => setBarber((p: any) => ({ ...p, image_url: url }))}
+          />
           <div><Label>Salon Name</Label><Input value={barber.name} onBlur={e => updateBarber('name', e.target.value)} onChange={e => setBarber((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div><Label>Address</Label><Input value={barber.address || ''} onBlur={e => updateBarber('address', e.target.value)} onChange={e => setBarber((p: any) => ({ ...p, address: e.target.value }))} /></div>
         </CardContent>
