@@ -294,6 +294,7 @@ export const AdminSalons = () => {
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => setEditingSalon(salon)}>Edit</Button>
                   <Button variant="outline" size="sm" onClick={() => setAccessSalon(salon)}>Access</Button>
+                  <Button variant="outline" size="sm" onClick={() => window.open(`/salon-dashboard?salon=${salon.id}`, '_blank')}>Dashboard</Button>
                   {salon.is_deleted ? (
                     <Button variant="outline" size="sm" onClick={() => handleRestore(salon.id)}>Restore</Button>
                   ) : (

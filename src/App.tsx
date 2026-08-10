@@ -59,7 +59,7 @@ const App = () => (
 
                 {/* Salon Routes */}
                 <Route path="/salon-login" element={<SalonAuth />} />
-                <Route path="/salon-dashboard" element={<RoleGate allow={["owner"]}><SalonDashboard /></RoleGate>} />
+                <Route path="/salon-dashboard" element={<RoleGate allow={["owner", "admin"]}><SalonDashboard /></RoleGate>} />
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<RoleGate allow={["admin"]}><AdminDashboard /></RoleGate>} />
