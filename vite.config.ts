@@ -19,14 +19,35 @@ export default defineConfig(({ mode }) => ({
       devOptions: { enabled: false },
       includeAssets: ["favicon.ico", "app-icon.png", "app-icon-192.png"],
       manifest: {
+        id: "/",
         name: "MakeMyCut",
         short_name: "MakeMyCut",
         description: "Book your perfect haircut instantly",
         theme_color: "#0B0B0B",
         background_color: "#0B0B0B",
         display: "standalone",
+        display_override: ["standalone", "minimal-ui"],
         orientation: "portrait",
         start_url: "/",
+        scope: "/",
+        // Open links to this origin inside the installed app when supported.
+        launch_handler: { client_mode: ["navigate-existing", "auto"] },
+        handle_links: "preferred",
+        ...({ capture_links: "existing-client-navigate" } as Record<string, unknown>),
+        shortcuts: [
+          {
+            name: "Book a slot",
+            short_name: "Book",
+            url: "/book",
+            icons: [{ src: "/app-icon-192.png", sizes: "192x192" }],
+          },
+          {
+            name: "Join queue",
+            short_name: "Queue",
+            url: "/join-queue",
+            icons: [{ src: "/app-icon-192.png", sizes: "192x192" }],
+          },
+        ],
         icons: [
           {
             src: "/app-icon-192.png",
