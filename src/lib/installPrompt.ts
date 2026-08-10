@@ -29,6 +29,15 @@ const markInstalled = () => {
   } catch { /* ignore */ }
 };
 
+/** Clears the remembered "installed" flag (app was uninstalled). */
+const markNotInstalled = () => {
+  installed = false;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch { /* ignore */ }
+};
+
 export const isAppInstalled = () =>
   installed ||
   (typeof window !== 'undefined' &&
@@ -68,6 +77,9 @@ export const initInstallPromptCapture = () => {
   initialized = true;
   window.addEventListener('beforeinstallprompt', (e: Event) => {
     e.preventDefault();
+    // Browsers only fire this when the app is NOT installed — so any
+    // remembered "installed" flag is stale (user uninstalled it).
+    markNotInstalled();
     deferred = e as BeforeInstallPromptEvent;
     emit();
   });
@@ -76,4 +88,23 @@ export const initInstallPromptCapture = () => {
     deferred = null;
     emit();
   });
+
+  // Verify the remembered flag against the browser where supported.
+  const nav = window.navigator as unknown as {
+    getInstalledRelatedApps?: () => Promise<unknown[]>;
+  };
+  if (installed && typeof nav.getInstalledRelatedApps === 'function') {
+    nav
+      .getInstalledRelatedApps()
+      .then((apps) => {
+        if (
+          (!apps || apps.length === 0) &&
+          !window.matchMedia('(display-mode: standalone)').matches
+        ) {
+          markNotInstalled();
+          emit();
+        }
+      })
+      .catch(() => { /* ignore */ });
+  }
 };
