@@ -4,6 +4,8 @@ import { X, Smartphone } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { authErrorMessage } from '@/lib/authErrors';
 import mmcBlockLogo from '@/assets/mmc-block-logo.png';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -29,6 +31,7 @@ export const BookingGateModal = ({
   setDeferredPrompt,
 }: BookingGateModalProps) => {
   const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { toast } = useToast();
   const [view, setView] = useState<GateView>('options');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -78,6 +81,8 @@ export const BookingGateModal = ({
     if (!error) {
       localStorage.setItem('booking_confirmed', 'true');
       onSuccess();
+    } else {
+      toast({ variant: 'destructive', title: 'Sign in failed', description: authErrorMessage(error) });
     }
   };
 

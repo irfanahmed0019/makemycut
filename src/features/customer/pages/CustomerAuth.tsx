@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useUserRole } from '@/hooks/useUserRole';
 import { homePathForRole } from '@/components/RoleGate';
+import { authErrorMessage } from '@/lib/authErrors';
 const signUpSchema = z.object({
   fullName: z.string().trim().min(2, 'Name must be at least 2 characters').max(100).regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
   phone: z.string().trim().regex(/^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/, 'Invalid phone number format'),
@@ -138,7 +139,10 @@ export default function CustomerAuth() {
           email,
           password
         });
-        await signIn(validatedData.email, validatedData.password);
+        const { error } = await signIn(validatedData.email, validatedData.password);
+        if (error) {
+          toast({ variant: 'destructive', title: 'Sign in failed', description: authErrorMessage(error) });
+        }
       } else if (authView === 'signup') {
         const validatedData = signUpSchema.parse({
           fullName,

@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { useUserRole } from '@/hooks/useUserRole';
 import { homePathForRole } from '@/components/RoleGate';
+import { authErrorMessage } from '@/lib/authErrors';
 
 const signInSchema = z.object({
   email: z.string().trim().email('Invalid email address'),
@@ -48,7 +49,7 @@ export default function SalonAuth() {
       if (!error) {
         setJustSignedIn(true);
       } else {
-        toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
+        toast({ variant: 'destructive', title: 'Login Failed', description: authErrorMessage(error) });
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
