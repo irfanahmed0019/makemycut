@@ -144,6 +144,18 @@ export const AdminSalons = () => {
     toast({ title: 'Listing Restored' });
   };
 
+  // Permanent delete: wipes the salon and every related record.
+  const handleHardDelete = async (salon: Salon) => {
+    if (!window.confirm(`Permanently delete "${salon.name}"? This removes the salon and all its bookings, queue, services and staff. This cannot be undone.`)) return;
+    const { error } = await supabase.rpc('admin_delete_salon', { p_salon_id: salon.id });
+    if (error) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+      return;
+    }
+    fetchSalons();
+    toast({ title: 'Salon deleted permanently' });
+  };
+
   const handleToggleFeature = async (salonId: string, field: 'queue_enabled' | 'booking_enabled', value: boolean) => {
     await supabase.from('salon_settings').update({ [field]: value }).eq('salon_id', salonId);
     setSettings(prev => ({ ...prev, [salonId]: { ...prev[salonId], [field]: value } }));
@@ -336,6 +348,7 @@ export const AdminSalons = () => {
                   ) : (
                     <Button variant="destructive" size="sm" onClick={() => handleSoftDelete(salon.id)}>Remove</Button>
                   )}
+                  <Button variant="destructive" size="sm" onClick={() => handleHardDelete(salon)}>Delete forever</Button>
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-4 items-center">
