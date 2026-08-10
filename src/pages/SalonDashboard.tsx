@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { PageSkeleton } from '@/components/ui/skeleton';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format, parseISO, isSameDay, isToday } from 'date-fns';
@@ -50,7 +50,9 @@ const windowStart = () => {
 };
 
 export default function SalonDashboard() {
-  const cached = readCache();
+  const [searchParams] = useSearchParams();
+  const overrideSalonId = searchParams.get('salon');
+  const cached = overrideSalonId ? null : readCache();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [allBookings, setAllBookings] = useState<Booking[]>(cached?.bookings ?? []);
@@ -93,23 +95,28 @@ export default function SalonDashboard() {
   useEffect(() => {
     const fetchBarberAndBookings = async () => {
       if (!user) return;
-      const { data: barberData, error } = await supabase.from('barbers').select('id, name').eq('owner_id', user.id).maybeSingle();
+      const query = supabase.from('barbers').select('id, name');
+      const { data: barberData, error } = overrideSalonId
+        ? await query.eq('id', overrideSalonId).maybeSingle()
+        : await query.eq('owner_id', user.id).maybeSingle();
       if (error || !barberData) {
-        sessionStorage.removeItem(CACHE_KEY);
+        if (!overrideSalonId) sessionStorage.removeItem(CACHE_KEY);
         toast({ variant: 'destructive', title: 'Access Denied', description: 'You are not registered as a salon owner.' });
-        navigate('/salon-login');
+        navigate(overrideSalonId ? '/admin' : '/salon-login');
         return;
       }
       setBarber(barberData);
       const bookingsWithProfiles = await fetchBookings(barberData.id);
       setAllBookings(bookingsWithProfiles);
       setIsLoading(false);
-      try {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ barber: barberData, bookings: bookingsWithProfiles }));
-      } catch { /* ignore quota */ }
+      if (!overrideSalonId) {
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ barber: barberData, bookings: bookingsWithProfiles }));
+        } catch { /* ignore quota */ }
+      }
     };
     fetchBarberAndBookings();
-  }, [user, navigate, toast]);
+  }, [user, navigate, toast, overrideSalonId]);
 
   useEffect(() => {
     if (!barber) return;
