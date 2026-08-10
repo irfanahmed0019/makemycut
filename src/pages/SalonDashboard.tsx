@@ -55,7 +55,6 @@ export default function SalonDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [allBookings, setAllBookings] = useState<Booking[]>(cached?.bookings ?? []);
   const [barber, setBarber] = useState<Barber | null>(cached?.barber ?? null);
-  const [showScanner, setShowScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(!cached);
   const [activeTab, setActiveTab] = useState('appointments');
   const { user, signOut, loading } = useAuth();
