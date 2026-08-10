@@ -864,6 +864,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_spam_phone: { Args: { p_phone: string }; Returns: boolean }
       join_queue: {
         Args: {
           p_chair_id?: string
@@ -894,6 +895,7 @@ export type Database = {
         Args: { p_owner_id: string; p_queue_id: string }
         Returns: boolean
       }
+      normalize_in_phone: { Args: { p_phone: string }; Returns: string }
       normalize_slug: { Args: { val: string }; Returns: string }
       place_hold:
         | {
@@ -936,6 +938,7 @@ export type Database = {
           district: string
         }[]
       }
+      set_my_phone: { Args: { p_phone: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }

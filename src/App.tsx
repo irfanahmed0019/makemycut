@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AreaIndexProvider } from "./contexts/AreaIndexContext";
 import { RoleGate } from "./components/RoleGate";
+import PhoneCaptureGate from "./components/PhoneCaptureGate";
 import { PageSkeleton } from "@/components/ui/skeleton";
 
 // Customer routes
@@ -41,6 +42,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <PhoneCaptureGate />
               <Suspense fallback={<PageSkeleton />}>
               <Routes>
                 {/* Customer Routes */}

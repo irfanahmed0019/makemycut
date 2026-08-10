@@ -12,9 +12,13 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { useUserRole } from '@/hooks/useUserRole';
 import { homePathForRole } from '@/components/RoleGate';
 import { authErrorMessage } from '@/lib/authErrors';
+import { COUNTRY_CODE, localDigits, phoneError } from '@/lib/phone';
 const signUpSchema = z.object({
   fullName: z.string().trim().min(2, 'Name must be at least 2 characters').max(100).regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
-  phone: z.string().trim().regex(/^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/, 'Invalid phone number format'),
+  phone: z.string().trim().superRefine((val, ctx) => {
+    const err = phoneError(val);
+    if (err) ctx.addIssue({ code: z.ZodIssueCode.custom, message: err });
+  }).transform(val => `${COUNTRY_CODE}${localDigits(val)}`),
   email: z.string().trim().email('Invalid email address').max(255),
   password: z.string().min(8, 'Password must be at least 8 characters').max(72).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain uppercase, lowercase, and number')
 });
@@ -301,7 +305,10 @@ export default function CustomerAuth() {
 
               <div className="space-y-1">
                 <Label htmlFor="phone" className="text-sm font-medium text-foreground">Phone Number</Label>
-                <Input id="phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} required placeholder="+1 (555) 000-0000" className={`h-12 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.phone ? 'border-destructive' : ''}`} />
+                <div className="flex items-end gap-2">
+                  <span className="h-12 flex items-center text-foreground border-b border-[hsl(0,0%,12%)]">{COUNTRY_CODE}</span>
+                  <Input id="phone" type="tel" inputMode="numeric" value={phone} onChange={e => setPhone(localDigits(e.target.value))} required placeholder="98765 43210" className={`h-12 flex-1 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.phone ? 'border-destructive' : ''}`} />
+                </div>
                 {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
               </div>
 
