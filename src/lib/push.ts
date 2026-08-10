@@ -98,6 +98,19 @@ export const enablePushNotifications = async (): Promise<void> => {
   }
 
   await persistSubscription(sub);
+
+  // Friendly confirmation right in the notification tray — works in a plain
+  // browser tab too, no PWA install needed.
+  try {
+    await reg.showNotification('Thanks for allowing notifications ;)', {
+      body: "You're all set — we'll keep you posted about your appointments.",
+      icon: '/app-icon-192.png',
+      badge: '/app-icon-192.png',
+      tag: 'mmc-welcome',
+    });
+  } catch {
+    /* non-fatal */
+  }
 };
 
 export const disablePushNotifications = async (): Promise<void> => {
