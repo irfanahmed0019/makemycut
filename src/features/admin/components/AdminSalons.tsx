@@ -297,6 +297,7 @@ export const AdminSalons = () => {
                   <Button variant="outline" size="sm" onClick={() => setEditingSalon(salon)}>Edit</Button>
                   <Button variant="outline" size="sm" onClick={() => setAccessSalon(salon)}>Access</Button>
                   <Button variant="outline" size="sm" onClick={() => window.open(`/salon-dashboard?salon=${salon.id}`, '_blank')}>Dashboard</Button>
+                  <Button variant="outline" size="sm" onClick={() => setResetSalon(salon)}>Reset data</Button>
                   {salon.is_deleted ? (
                     <Button variant="outline" size="sm" onClick={() => handleRestore(salon.id)}>Restore</Button>
                   ) : (
