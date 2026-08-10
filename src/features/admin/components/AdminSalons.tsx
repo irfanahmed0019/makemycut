@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toSlug } from '@/lib/slug';
 import { SalonImageUploader } from '@/components/salon/SalonImageUploader';
+import { SalonAccessManager } from './SalonAccessManager';
 
 interface Salon {
   id: string;
@@ -50,6 +51,7 @@ export const AdminSalons = () => {
     is_verified: true, badge_type: 'none', status_tag: 'none',
   });
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [accessSalon, setAccessSalon] = useState<Salon | null>(null);
   const [filter, setFilter] = useState<FilterMode>('live');
   const pendingDelete = useRef<{ id: string; timeout: NodeJS.Timeout } | null>(null);
   const { toast } = useToast();
@@ -251,6 +253,23 @@ export const AdminSalons = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Access / staff dialog */}
+      <Dialog open={!!accessSalon} onOpenChange={(open) => !open && setAccessSalon(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{accessSalon?.name} — Dashboard access</DialogTitle></DialogHeader>
+          {accessSalon && (
+            <SalonAccessManager
+              salonId={accessSalon.id}
+              ownerId={accessSalon.owner_id}
+              onOwnerChange={(ownerId) => {
+                setAccessSalon(p => p ? { ...p, owner_id: ownerId } : null);
+                setSalons(prev => prev.map(s => s.id === accessSalon.id ? { ...s, owner_id: ownerId } : s));
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       {filteredSalons.map(salon => {
         const s = settings[salon.id] || { queue_enabled: true, booking_enabled: true, wait_per_customer: 20 };
         return (
@@ -274,6 +293,7 @@ export const AdminSalons = () => {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => setEditingSalon(salon)}>Edit</Button>
+                  <Button variant="outline" size="sm" onClick={() => setAccessSalon(salon)}>Access</Button>
                   {salon.is_deleted ? (
                     <Button variant="outline" size="sm" onClick={() => handleRestore(salon.id)}>Restore</Button>
                   ) : (

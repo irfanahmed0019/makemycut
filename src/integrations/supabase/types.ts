@@ -772,6 +772,24 @@ export type Database = {
       }
     }
     Functions: {
+      admin_lookup_user: {
+        Args: { p_user_id: string }
+        Returns: {
+          email: string
+          full_name: string
+          phone: string
+          user_id: string
+        }[]
+      }
+      admin_search_users: {
+        Args: { p_query: string }
+        Returns: {
+          email: string
+          full_name: string
+          phone: string
+          user_id: string
+        }[]
+      }
       cancel_booking: {
         Args: { p_booking_id: string; p_user_id: string }
         Returns: boolean
