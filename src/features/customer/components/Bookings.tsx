@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { fetchBookedSlots, isSlotTaken, to12h, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS } from '../lib/slotAvailability';
+import { fetchBookedSlots, isSlotTaken, to12h, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS, isSlotPast } from '../lib/slotAvailability';
 import { reportError } from '@/lib/monitoring';
 import { sendPush } from '@/lib/notify';
 
@@ -56,6 +56,7 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
   const [reschedBooked, setReschedBooked] = useState<Set<string>>(new Set());
   const [rescheduling, setRescheduling] = useState(false);
   const [timeSlots, setTimeSlots] = useState<string[]>(DEFAULT_TIME_SLOTS);
+  const [now, setNow] = useState<Date>(new Date());
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -63,6 +64,14 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
     if (!name) return 'Customer';
     return name.trim().split(' ')[0] || 'Customer';
   };
+
+  // Live clock so slots that have already started grey out on their own.
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    const onVis = () => { if (!document.hidden) setNow(new Date()); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -259,6 +268,12 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
     setRescheduling(true);
     const dateStr = format(reschedDate, 'yyyy-MM-dd');
     const time24 = to24h(reschedTime) + ':00';
+
+    if (isSlotPast(reschedDate, reschedTime)) {
+      setRescheduling(false);
+      toast({ variant: 'destructive', title: 'Time already passed', description: 'Please pick a slot later than the current time.' });
+      return;
+    }
 
     // Pre-flight: check if the target slot is already taken before writing.
     // This prevents unique-constraint errors from bubbling up to the UI.
@@ -565,15 +580,17 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
                 <div className="grid grid-cols-3 gap-2">
                   {timeSlots.map((t) => {
                     const isBooked = reschedBooked.has(t);
-                    const isSelected = reschedTime === t && !isBooked;
+                    const isPast = isSlotPast(reschedDate, t, now);
+                    const isDisabled = isBooked || isPast;
+                    const isSelected = reschedTime === t && !isDisabled;
                     return (
                       <Button
                         key={t}
                         variant={isSelected ? 'default' : 'outline'}
                         size="sm"
-                        disabled={isBooked}
+                        disabled={isDisabled}
                         onClick={() => setReschedTime(t)}
-                        className={isBooked ? 'opacity-40' : ''}
+                        className={isDisabled ? 'opacity-40' : ''}
                       >
                         {t}
                       </Button>
@@ -585,7 +602,7 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
               <Button
                 className="w-full h-12 font-bold"
                 onClick={handleReschedule}
-                disabled={rescheduling || reschedBooked.has(reschedTime)}
+                disabled={rescheduling || reschedBooked.has(reschedTime) || isSlotPast(reschedDate, reschedTime, now)}
               >
                 {rescheduling ? 'Rescheduling…' : `Reschedule to ${format(reschedDate, 'MMM dd')} at ${reschedTime}`}
               </Button>
