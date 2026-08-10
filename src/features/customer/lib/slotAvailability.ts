@@ -112,13 +112,15 @@ export const isSlotTaken = async (
   barberId: string,
   dateStr: string,
   time24WithSeconds: string,
-  excludeBookingId?: string
+  excludeBookingId?: string,
+  chairId?: string | null
 ): Promise<boolean> => {
   const { data, error } = await (supabase as any).rpc('is_slot_occupied', {
     p_barber_id: barberId,
     p_booking_date: dateStr,
     p_booking_time: time24WithSeconds,
     p_exclude_booking_id: excludeBookingId ?? null,
+    p_chair_id: chairId ?? null,
   });
   if (error) return false;
   return data === true;
