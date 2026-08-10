@@ -24,6 +24,20 @@ export const to24h = (t: string): string => {
 // MUST be identical between booking and reschedule flows.
 export const OCCUPYING_STATUSES = ['upcoming', 'CONFIRMED', 'ON_HOLD', 'pending', 'completed'];
 
+// Minimum lead time (minutes) before a slot's start for it to remain bookable.
+export const SLOT_LEAD_MINUTES = 0;
+
+/**
+ * True when a slot on the given date has already started (or is within the
+ * lead-time window) relative to `now`. Slots on future dates are never past.
+ */
+export const isSlotPast = (date: Date, time12h: string, now: Date = new Date()): boolean => {
+  const slot = new Date(date);
+  const [h, m] = to24h(time12h).split(':').map((n) => parseInt(n, 10));
+  slot.setHours(h, m, 0, 0);
+  return slot.getTime() - SLOT_LEAD_MINUTES * 60_000 <= now.getTime();
+};
+
 // Fallback slots used only when a salon has no configured slots yet.
 export const DEFAULT_TIME_SLOTS = [
   '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',

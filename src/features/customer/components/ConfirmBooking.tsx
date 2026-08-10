@@ -5,7 +5,7 @@ import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameD
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookingGateModal } from './BookingGateModal';
-import { fetchBookedSlots, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS } from '../lib/slotAvailability';
+import { fetchBookedSlots, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS, isSlotPast } from '../lib/slotAvailability';
 import { reportError } from '@/lib/monitoring';
 import { sendPush } from '@/lib/notify';
 
@@ -42,6 +42,15 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   const [chairs, setChairs] = useState<any[]>([]);
   const [selectedChair, setSelectedChair] = useState<string>('');
   const [timeSlots, setTimeSlots] = useState<string[]>(DEFAULT_TIME_SLOTS);
+  const [now, setNow] = useState<Date>(new Date());
+
+  // Live clock so past slots grey out on their own, without a refresh.
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    const onVis = () => { if (!document.hidden) setNow(new Date()); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
+  }, []);
 
   // Capture install prompt
   useEffect(() => {
@@ -95,8 +104,8 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     const booked = await fetchBookedSlots(barber.id, dateStr, undefined, selectedChair || null);
     setBookedSlots(booked);
 
-    if (booked.has(selectedTime)) {
-      const available = timeSlots.find((t) => !booked.has(t));
+    if (booked.has(selectedTime) || isSlotPast(selectedDate, selectedTime)) {
+      const available = timeSlots.find((t) => !booked.has(t) && !isSlotPast(selectedDate, t));
       if (available) setSelectedTime(available);
     }
   };
@@ -152,6 +161,11 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     const selectedDateStart = startOfDay(selectedDate);
     if (isBefore(selectedDateStart, today)) {
       toast({ variant: 'destructive', title: 'Invalid Date', description: 'Cannot book appointments in the past.' });
+      return;
+    }
+
+    if (isSlotPast(selectedDate, selectedTime)) {
+      toast({ variant: 'destructive', title: 'Time Already Passed', description: 'Please pick a slot later than the current time.' });
       return;
     }
 
@@ -339,14 +353,16 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
       <div className="grid grid-cols-2 gap-3 px-4">
         {timeSlots.map((time) => {
           const isBooked = bookedSlots.has(time);
-          const isSelected = selectedTime === time && !isBooked;
+          const isPast = isSlotPast(selectedDate, time, now);
+          const isDisabled = isBooked || isPast;
+          const isSelected = selectedTime === time && !isDisabled;
 
           let variant: 'default' | 'outline' | 'ghost' | 'secondary' = 'outline';
           let extraClass = 'flex flex-col items-center justify-center gap-0.5';
 
           if (isSelected) {
             variant = 'default';
-          } else if (isBooked) {
+          } else if (isDisabled) {
             extraClass += ' opacity-40 bg-muted text-muted-foreground';
           }
 
@@ -355,14 +371,18 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
               key={time}
               variant={variant}
               onClick={() => handleSlotSelect(time)}
-              disabled={isBooked}
+              disabled={isDisabled}
               className={extraClass}
             >
               <span className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-base">schedule</span>
                 <span>{time}</span>
               </span>
-              {isBooked && <span className="text-[10px] text-muted-foreground font-normal">Booked</span>}
+              {isBooked ? (
+                <span className="text-[10px] text-muted-foreground font-normal">Booked</span>
+              ) : isPast ? (
+                <span className="text-[10px] text-muted-foreground font-normal">Passed</span>
+              ) : null}
             </Button>
           );
         })}
