@@ -195,11 +195,16 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     // Use the full booking object from edge function response
     if (fnResponse?.booking) {
       const b = fnResponse.booking;
+      const whenLabel = `${format(selectedDate, 'EEE, d MMM')} at ${selectedTime}`;
+      toast({
+        title: 'Booking successful!',
+        description: `You have successfully booked ${barber.name} for ${whenLabel}.`,
+      });
       if (user?.id) {
         sendPush({
           userId: user.id,
-          title: 'Appointment confirmed',
-          body: `Your appointment at ${barber.name} is confirmed for ${b.booking_time}.`,
+          title: 'Booking successful',
+          body: `You have successfully booked ${barber.name} for ${whenLabel}. See you there!`,
           url: '/',
           appointmentId: b.id,
           notificationType: 'appointment_confirmed',
