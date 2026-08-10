@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BookingGateModal } from './BookingGateModal';
 import { fetchBookedSlots, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS } from '../lib/slotAvailability';
 import { reportError } from '@/lib/monitoring';
+import { sendPush } from '@/lib/notify';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
