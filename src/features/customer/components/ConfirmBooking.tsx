@@ -43,6 +43,20 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   const [selectedChair, setSelectedChair] = useState<string>('');
   const [timeSlots, setTimeSlots] = useState<string[]>(DEFAULT_TIME_SLOTS);
   const [now, setNow] = useState<Date>(new Date());
+  const [lastMinuteAlerts, setLastMinuteAlerts] = useState(false);
+
+  // Load the saved "last-minute alerts" preference for this user
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from('notification_preferences')
+      .select('last_minute_alerts')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setLastMinuteAlerts(!!data.last_minute_alerts);
+      });
+  }, [user?.id]);
 
   // Live clock so past slots grey out on their own, without a refresh.
   useEffect(() => {
@@ -171,6 +185,11 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
 
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const time24 = to24h(selectedTime);
+
+    // Persist the last-minute alerts opt-in chosen during booking
+    await supabase
+      .from('notification_preferences')
+      .upsert({ user_id: user.id, last_minute_alerts: lastMinuteAlerts }, { onConflict: 'user_id' });
 
     // Server-side validated booking via edge function
     const { data: fnResponse, error: fnError } = await supabase.functions.invoke('create-booking', {
