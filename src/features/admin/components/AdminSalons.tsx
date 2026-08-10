@@ -273,6 +273,7 @@ export const AdminSalons = () => {
       </Dialog>
 
       {filteredSalons.map(salon => {
+        return null as any;
         const s = settings[salon.id] || { queue_enabled: true, booking_enabled: true, wait_per_customer: 20 };
         return (
           <Card key={salon.id} className={salon.is_deleted ? 'opacity-60' : ''}>
