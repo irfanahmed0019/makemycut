@@ -74,11 +74,13 @@ export const InstallAppCard = () => {
 
   if (installed) {
     return (
-      <div className="flex items-center gap-4 py-3 px-1">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
-          <span className="material-symbols-outlined text-primary">check_circle</span>
+      <div className="py-2 px-1">
+        <div className="w-full flex items-center gap-3 rounded-xl border border-border/60 bg-secondary/30 px-3 py-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
+            <span className="material-symbols-outlined text-lg text-primary">check_circle</span>
+          </div>
+          <p className="text-sm font-medium text-foreground">MakeMyCut is installed</p>
         </div>
-        <p className="text-base text-foreground">MakeMyCut is installed</p>
       </div>
     );
   }
