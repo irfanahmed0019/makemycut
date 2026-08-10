@@ -78,6 +78,8 @@ export const BookingGateModal = ({
     if (!error) {
       localStorage.setItem('booking_confirmed', 'true');
       onSuccess();
+    } else {
+      toast({ variant: 'destructive', title: 'Sign in failed', description: authErrorMessage(error) });
     }
   };
 
