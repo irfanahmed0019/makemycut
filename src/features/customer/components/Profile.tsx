@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { NotificationSettings } from './NotificationSettings';
+import { InstallAppCard } from './InstallAppCard';
 
 interface ProfileData {
   full_name: string;
@@ -291,6 +292,9 @@ export const Profile = () => {
           </div>
           <span className="material-symbols-outlined text-muted-foreground">chevron_right</span>
         </button>
+
+        {/* Install PWA */}
+        <InstallAppCard />
 
         {/* Privacy */}
         <button
