@@ -272,8 +272,40 @@ export const AdminSalons = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Reset data dialog */}
+      <Dialog open={!!resetSalon} onOpenChange={(open) => !open && setResetSalon(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Reset {resetSalon?.name} data?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This permanently deletes all bookings, reminders, queue entries and held slots for this salon.
+            Services, chairs, staff, time slots and salon details are kept.
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button variant="ghost" onClick={() => setResetSalon(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={resetting}
+              onClick={async () => {
+                if (!resetSalon) return;
+                setResetting(true);
+                const { data, error } = await supabase.rpc('admin_reset_salon_data' as any, { p_salon_id: resetSalon.id });
+                setResetting(false);
+                if (error) {
+                  toast({ variant: 'destructive', title: 'Reset failed', description: error.message });
+                  return;
+                }
+                const res = (data as any) || {};
+                toast({ title: 'Salon data reset', description: `${res.bookings ?? 0} bookings and ${res.queue_entries ?? 0} queue entries removed.` });
+                setResetSalon(null);
+              }}
+            >
+              {resetting ? 'Resetting…' : 'Reset all bookings'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {filteredSalons.map(salon => {
-        return null as any;
         const s = settings[salon.id] || { queue_enabled: true, booking_enabled: true, wait_per_customer: 20 };
         return (
           <Card key={salon.id} className={salon.is_deleted ? 'opacity-60' : ''}>
