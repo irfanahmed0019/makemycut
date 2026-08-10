@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { BarberReviews } from '@/components/BarberReviews';
+import { BarberReviews } from '@/features/customer/components/BarberReviews';
 
 export default function Reviews() {
   const location = useLocation();

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { fetchBookedSlots, isSlotTaken, to12h, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS } from '../lib/slotAvailability';
+import { reportError } from '@/lib/monitoring';
 
 interface Booking {
   id: string;
@@ -179,6 +180,7 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
 
     setCancelling(false);
     if (error) {
+      reportError('rpc', error, { fn: 'cancel_booking' });
       toast({ variant: 'destructive', title: 'Could not cancel', description: error.message });
       return;
     }

@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { clearRoleCache } from '@/hooks/useUserRole';
+import { reportError } from '@/lib/monitoring';
 
 interface AuthContextType {
   user: User | null;
@@ -101,6 +102,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       email,
       password
     });
+
+    if (error) reportError('auth', error, { action: 'signInWithPassword' });
 
     // NOTE: the caller decides how to surface the failure (salon vs customer
     // login show different guidance), so we do not toast here — that produced

@@ -1,0 +1,1 @@
+REVOKE ALL ON public.profile_payment_details FROM anon;
