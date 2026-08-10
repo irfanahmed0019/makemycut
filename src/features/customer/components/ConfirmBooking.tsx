@@ -469,6 +469,23 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
         </div>
       </div>
 
+      <div className="px-4 pt-4">
+        <label className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={lastMinuteAlerts}
+            onChange={(e) => setLastMinuteAlerts(e.target.checked)}
+            className="mt-0.5 h-5 w-5 accent-primary shrink-0"
+          />
+          <span>
+            <span className="block text-sm font-medium">🔔 Notify me about last-minute appointments</span>
+            <span className="block text-xs text-muted-foreground mt-0.5">
+              Get an alert when an earlier slot opens up at this salon.
+            </span>
+          </span>
+        </label>
+      </div>
+
       <div className="px-4 py-3">
         <Button onClick={handleConfirmClick} className="w-full h-14 text-lg font-bold">
           Confirm Booking
