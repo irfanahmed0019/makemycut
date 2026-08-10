@@ -48,6 +48,19 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   // Load the saved "last-minute alerts" preference for this user
   useEffect(() => {
     if (!user?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from('notification_preferences')
+        .select('last_minute_alerts')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) setLastMinuteAlerts(!!data.last_minute_alerts);
+    })();
+  }, [user?.id]);
+
+  // Load the saved "last-minute alerts" preference for this user
+  useEffect(() => {
+    if (!user?.id) return;
     supabase
       .from('notification_preferences')
       .select('last_minute_alerts')
