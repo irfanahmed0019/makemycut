@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PageSkeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -105,17 +105,12 @@ export default function BarberDashboard() {
   const fetchAll = async () => {
     if (!salonId) return;
     const today = new Date().toISOString().slice(0, 10);
-    const [{ data: qAll }, { data: bAll }, { data: cAll }, { data: reqs }, { data: doneBookings }, { data: bDays }] = await Promise.all([
+    const [{ data: qAll }, { data: cAll }, { data: reqs }, { data: doneBookings }, { data: bDays }] = await Promise.all([
       supabase.from('queues')
         .select('*, services:service_id(name), chairs:chair_id(chair_number, name)')
         .eq('salon_id', salonId)
         .in('status', ['waiting', 'serving'])
         .order('queue_position'),
-      supabase.from('bookings')
-        .select('id, user_id, chair_id, service_id, booking_date, booking_time, status, services:service_id(name, duration_minutes)')
-        .eq('barber_id', salonId)
-        .eq('booking_date', today)
-        .in('status', ['upcoming', 'CONFIRMED', 'pending']),
       supabase.from('chairs').select('id, chair_number, name').eq('salon_id', salonId).eq('is_active', true).order('chair_number'),
       supabase.from('chair_transfer_requests').select('*').eq('status', 'pending')
         .or(`from_barber_id.eq.${user?.id},to_barber_id.eq.${user?.id}`),
@@ -123,14 +118,17 @@ export default function BarberDashboard() {
         .eq('barber_id', salonId).eq('booking_date', today)
         .eq('chair_id', chairId as any).eq('status', 'completed'),
       supabase.from('bookings')
-        .select('id, user_id, chair_id, booking_date, booking_time, status, services:service_id(name, price, duration_minutes)')
+        .select('id, user_id, chair_id, service_id, booking_date, booking_time, status, services:service_id(name, price, duration_minutes)')
         .eq('barber_id', salonId)
         .in('booking_date', [dateKey(0), dateKey(1), dateKey(2)])
         .order('booking_time', { ascending: true }),
     ]);
-    const bookings = (bAll || []) as any[];
-    const days = (bDays || []) as any[];
-    const userIds = Array.from(new Set([...bookings, ...days].map((b) => b.user_id).filter(Boolean)));
+    const days = ((bDays || []) as any[]);
+    // Today's active bookings are a subset of the 3-day fetch — no extra round trip.
+    const bookings = days.filter(
+      (b) => b.booking_date === today && ['upcoming', 'CONFIRMED', 'pending'].includes(b.status),
+    );
+    const userIds = Array.from(new Set(days.map((b) => b.user_id).filter(Boolean)));
     let profileMap: Record<string, any> = {};
     if (userIds.length > 0) {
       const { data: profs } = await supabase.from('profiles').select('id, full_name, phone').in('id', userIds);
