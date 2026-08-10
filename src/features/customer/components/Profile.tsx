@@ -58,7 +58,16 @@ export const Profile = () => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [contactEmail, setContactEmail] = useState('makemycut.official@gmail.com');
   const { isAdmin } = useAdminCheck();
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('app_settings').select('text_value').eq('key', 'contact_email').maybeSingle();
+      if (data?.text_value) setContactEmail(data.text_value);
+    })();
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -297,6 +306,23 @@ export const Profile = () => {
 
         {/* Install PWA */}
         <InstallAppCard />
+
+        {/* Contact Us */}
+        <a
+          href={`mailto:${contactEmail}?subject=${encodeURIComponent('MakeMyCut Support')}`}
+          className="w-full flex items-center justify-between py-3 text-left hover:bg-muted/40 rounded-lg px-1"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
+              <span className="material-symbols-outlined">mail</span>
+            </div>
+            <div>
+              <p className="text-base text-foreground">Contact Us</p>
+              <p className="text-xs text-muted-foreground">{contactEmail}</p>
+            </div>
+          </div>
+          <span className="material-symbols-outlined text-muted-foreground">chevron_right</span>
+        </a>
 
         {/* Privacy */}
         <button
