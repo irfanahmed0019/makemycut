@@ -46,6 +46,9 @@ export default defineConfig(({ mode }) => ({
         // HTML is deliberately NOT precached: the app shell must always be
         // revalidated so a new deployment is picked up immediately.
         globPatterns: ["**/*.{js,css,ico,png,svg,woff,woff2}"],
+        // Web Push handlers live in their own file and are pulled into the
+        // generated service worker so pushes are handled while the app is closed.
+        importScripts: ["/push-sw.js"],
         navigateFallback: null,
         cleanupOutdatedCaches: true,
         clientsClaim: true,
