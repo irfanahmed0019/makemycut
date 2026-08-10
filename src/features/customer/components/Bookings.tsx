@@ -219,7 +219,7 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
   const fetchReschedSlots = async (booking: Booking, date: Date) => {
     if (!booking.barber_id) return;
     const dateStr = format(date, 'yyyy-MM-dd');
-    const booked = await fetchBookedSlots(booking.barber_id, dateStr, booking.id);
+    const booked = await fetchBookedSlots(booking.barber_id, dateStr, booking.id, (booking as any).chair_id ?? null);
     setReschedBooked(booked);
     // If the currently-selected time just became unavailable (e.g. another
     // customer grabbed it in realtime), auto-move selection to the first
@@ -282,7 +282,7 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
 
     // Pre-flight: check if the target slot is already taken before writing.
     // This prevents unique-constraint errors from bubbling up to the UI.
-    const taken = await isSlotTaken(rescheduleTarget.barber_id, dateStr, time24, rescheduleTarget.id);
+    const taken = await isSlotTaken(rescheduleTarget.barber_id, dateStr, time24, rescheduleTarget.id, (rescheduleTarget as any).chair_id ?? null);
     if (taken) {
       setRescheduling(false);
       toast({
