@@ -29,16 +29,24 @@ export const getVapidPublicKey = async (): Promise<string> => {
   return cachedKey;
 };
 
+/**
+ * Push must work for everyone — installed PWA *and* plain browser tabs
+ * (including dev/preview where the app-shell worker is intentionally blocked).
+ * If the Workbox app worker isn't there, register the standalone push worker.
+ */
+const PUSH_SW_URL = '/push-sw.js';
+
 const getRegistration = async (): Promise<ServiceWorkerRegistration> => {
-  const existing = await navigator.serviceWorker.getRegistration();
-  if (existing) return existing;
-  // In production main.tsx registers it; wait for whichever lands first.
-  return await navigator.serviceWorker.ready;
+  const existing = await navigator.serviceWorker.getRegistration('/');
+  if (existing?.active || existing?.waiting || existing?.installing) return existing;
+  const reg = await navigator.serviceWorker.register(PUSH_SW_URL, { scope: '/' });
+  await navigator.serviceWorker.ready.catch(() => undefined);
+  return reg;
 };
 
 export const getExistingSubscription = async (): Promise<PushSubscription | null> => {
   if (!checkPushSupport().supported) return null;
-  const reg = await navigator.serviceWorker.getRegistration();
+  const reg = await navigator.serviceWorker.getRegistration('/');
   if (!reg) return null;
   return await reg.pushManager.getSubscription();
 };
