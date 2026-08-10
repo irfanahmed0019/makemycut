@@ -16,21 +16,24 @@ export type Database = {
     Tables: {
       app_settings: {
         Row: {
-          bool_value: boolean
+          bool_value: boolean | null
           created_at: string
           key: string
+          text_value: string | null
           updated_at: string
         }
         Insert: {
-          bool_value?: boolean
+          bool_value?: boolean | null
           created_at?: string
           key: string
+          text_value?: string | null
           updated_at?: string
         }
         Update: {
-          bool_value?: boolean
+          bool_value?: boolean | null
           created_at?: string
           key?: string
+          text_value?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -772,6 +775,14 @@ export type Database = {
       }
     }
     Functions: {
+      admin_list_admins: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          user_id: string
+        }[]
+      }
       admin_lookup_user: {
         Args: { p_user_id: string }
         Returns: {

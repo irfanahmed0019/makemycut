@@ -15,6 +15,7 @@ import { AdminServicesManager } from '../components/AdminServicesManager';
 import { AdminTimeSlots } from '../components/AdminTimeSlots';
 import { AdminFaqs } from '../components/AdminFaqs';
 import { AdminRatingsToggle } from '../components/AdminRatingsToggle';
+import { AdminSettings } from '../components/AdminSettings';
 
 export default function AdminDashboard() {
   const { isAdmin, loading } = useAdminCheck();
@@ -96,13 +97,14 @@ export default function AdminDashboard() {
 
           {/* Tabs */}
           <Tabs defaultValue="salons">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="salons">Salons</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
               <TabsTrigger value="queue">Queue</TabsTrigger>
               <TabsTrigger value="services">Services</TabsTrigger>
               <TabsTrigger value="slots">Slots</TabsTrigger>
               <TabsTrigger value="faqs">FAQs</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
             <TabsContent value="salons" className="space-y-4">
               <AdminRatingsToggle />
@@ -113,6 +115,7 @@ export default function AdminDashboard() {
             <TabsContent value="services"><AdminServicesManager /></TabsContent>
             <TabsContent value="slots"><AdminTimeSlots /></TabsContent>
             <TabsContent value="faqs"><AdminFaqs /></TabsContent>
+            <TabsContent value="settings"><AdminSettings /></TabsContent>
           </Tabs>
         </main>
       </div>
