@@ -17,18 +17,24 @@ const loadRole = async (userId: string): Promise<RoleInfo> => {
   if (existing) return existing;
 
   const promise = (async (): Promise<RoleInfo> => {
-    const [{ data: roles }, { data: assignment }, { data: ownedBarber }] = await Promise.all([
+    const [rolesRes, assignmentRes, ownedRes] = await Promise.all([
       supabase.from('user_roles').select('role').eq('user_id', userId),
       supabase.from('barber_assignments').select('chair_id, salon_id').eq('user_id', userId).eq('is_active', true).maybeSingle(),
       supabase.from('barbers').select('id').eq('owner_id', userId).maybeSingle(),
     ]);
+    const { data: roles } = rolesRes;
+    const { data: assignment } = assignmentRes;
+    const { data: ownedBarber } = ownedRes;
     const roleList = (roles || []).map((r: any) => r.role);
     let info: RoleInfo = { role: 'customer', chairId: null, salonId: null };
     if (roleList.includes('admin')) info = { role: 'admin', chairId: null, salonId: null };
     else if (assignment) info = { role: 'barber', chairId: assignment.chair_id, salonId: assignment.salon_id };
     else if (ownedBarber) info = { role: 'owner', chairId: null, salonId: null };
-    roleCache.set(userId, info);
     inflight.delete(userId);
+    // Never cache a fallback that came from a failed lookup — that would lock
+    // a real owner/barber out until a hard reload.
+    const failed = !!(rolesRes.error || assignmentRes.error || ownedRes.error);
+    if (!failed) roleCache.set(userId, info);
     return info;
   })();
 
@@ -36,12 +42,15 @@ const loadRole = async (userId: string): Promise<RoleInfo> => {
   return promise;
 };
 
+/** Resolve a user's role on demand (awaitable, bypasses render timing). */
+export const resolveUserRole = loadRole;
+
 export const useUserRole = () => {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id ?? null;
   const cached = userId ? roleCache.get(userId) : null;
   const [info, setInfo] = useState<RoleInfo>(cached ?? { role: 'customer', chairId: null, salonId: null });
-  const [loading, setLoading] = useState(!cached);
+  const [resolvedFor, setResolvedFor] = useState<string | null>(cached ? userId : null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -53,20 +62,19 @@ export const useUserRole = () => {
     if (authLoading) return;
     if (!userId) {
       setInfo({ role: 'customer', chairId: null, salonId: null });
-      setLoading(false);
+      setResolvedFor(null);
       return;
     }
     const hit = roleCache.get(userId);
     if (hit) {
       setInfo(hit);
-      setLoading(false);
+      setResolvedFor(userId);
       return;
     }
-    setLoading(true);
     loadRole(userId).then((res) => {
       if (!mounted.current) return;
       setInfo(res);
-      setLoading(false);
+      setResolvedFor(userId);
     });
     // Only depends on the user id — token refreshes create a new user object
     // but must not re-trigger a role lookup (that caused the loading flicker).
@@ -76,7 +84,7 @@ export const useUserRole = () => {
     role: info.role,
     chairId: info.chairId,
     salonId: info.salonId,
-    loading: loading || (authLoading && !cached),
+    loading: authLoading || (!!userId && resolvedFor !== userId),
     user,
   };
 };
