@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toSlug } from '@/lib/slug';
+import { SalonImageUploader } from '@/components/salon/SalonImageUploader';
 
 interface Salon {
   id: string;
@@ -218,6 +219,14 @@ export const AdminSalons = () => {
               </div>
               <div><Label>Address</Label><Input value={editingSalon.address || ''} onChange={e => setEditingSalon(p => p ? { ...p, address: e.target.value } : null)} /></div>
               <div><Label>Description</Label><Input value={editingSalon.description || ''} onChange={e => setEditingSalon(p => p ? { ...p, description: e.target.value } : null)} /></div>
+              <SalonImageUploader
+                salonId={editingSalon.id}
+                imageUrl={editingSalon.image_url}
+                onUploaded={(url) => {
+                  setEditingSalon(p => p ? { ...p, image_url: url } : null);
+                  setSalons(prev => prev.map(s => s.id === editingSalon.id ? { ...s, image_url: url } : s));
+                }}
+              />
               <div><Label>Image URL</Label><Input value={editingSalon.image_url || ''} onChange={e => setEditingSalon(p => p ? { ...p, image_url: e.target.value } : null)} /></div>
               <div className="flex items-center gap-2"><Switch checked={editingSalon.is_verified ?? true} onCheckedChange={(v) => setEditingSalon(p => p ? { ...p, is_verified: v } : null)} /><Label>Verified</Label></div>
               <div className="grid grid-cols-2 gap-2">
