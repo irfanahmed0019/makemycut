@@ -23,6 +23,7 @@ export const InstallAppCard = () => {
   const [showSteps, setShowSteps] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const timer = useRef<number | null>(null);
+  const installAttempt = useRef(false);
 
   useEffect(() => () => { if (timer.current) window.clearInterval(timer.current); }, []);
 
@@ -52,19 +53,24 @@ export const InstallAppCard = () => {
   };
 
   const handleInstall = async () => {
-    if (progress !== null) return;
+    if (progress !== null || installAttempt.current) return;
     if (!getInstallPrompt()) {
       setShowSteps(true);
       return;
     }
+    installAttempt.current = true;
+    setShowSteps(false);
     runProgress();
     const accepted = await triggerInstall();
     if (accepted) {
       setInstalled(true);
+    } else {
       if (timer.current) window.clearInterval(timer.current);
       timer.current = null;
       setProgress(null);
+      if (!getInstallPrompt()) setShowSteps(true);
     }
+    installAttempt.current = false;
   };
 
   if (installed) {

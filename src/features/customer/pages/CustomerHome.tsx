@@ -14,28 +14,16 @@ import { AreaSearchBar } from '@/features/directory/components/AreaSearchBar';
 import { consumePendingAction } from '@/features/directory/lib/pendingAction';
 import { useSearchParams } from 'react-router-dom';
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
 const CustomerHome = () => {
   const [activeSection, setActiveSection] = useState<string>('home');
   const [selectedBarber, setSelectedBarber] = useState<any>(null);
   const [confirmedBooking, setConfirmedBooking] = useState<any>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingSection, setPendingSection] = useState<string | null>(null);
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [queueData, setQueueData] = useState<{ queueId: string; position: number; estimatedWait: number } | null>(null);
   const { user, loading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const mainRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    const handler = (e: Event) => { e.preventDefault(); setDeferredPrompt(e as BeforeInstallPromptEvent); };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
 
   // Switching sections must start at the top — otherwise a scrolled-down home
   // page leaves the new screen (e.g. Confirm Booking) showing empty space.
@@ -213,7 +201,7 @@ const CustomerHome = () => {
         </nav>
       </footer>
 
-      <BookingGateModal isOpen={showAuthModal} onClose={handleAuthClose} onSuccess={handleAuthSuccess} deferredPrompt={deferredPrompt} setDeferredPrompt={setDeferredPrompt} />
+      <BookingGateModal isOpen={showAuthModal} onClose={handleAuthClose} onSuccess={handleAuthSuccess} />
     </div>
   );
 };

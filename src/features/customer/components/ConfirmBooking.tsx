@@ -9,11 +9,6 @@ import { fetchBookedSlots, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS, isSlo
 import { reportError } from '@/lib/monitoring';
 import { sendPush } from '@/lib/notify';
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
 interface Service {
   id: string;
   name: string;
@@ -37,7 +32,6 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   const [selectedTime, setSelectedTime] = useState<string>('10:00 AM');
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [showGateModal, setShowGateModal] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
   const [chairs, setChairs] = useState<any[]>([]);
   const [selectedChair, setSelectedChair] = useState<string>('');
@@ -77,16 +71,6 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     const onVis = () => { if (!document.hidden) setNow(new Date()); };
     document.addEventListener('visibilitychange', onVis);
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
-  }, []);
-
-  // Capture install prompt
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
   useEffect(() => {
@@ -497,8 +481,6 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
         isOpen={showGateModal}
         onClose={() => setShowGateModal(false)}
         onSuccess={handleGateSuccess}
-        deferredPrompt={deferredPrompt}
-        setDeferredPrompt={setDeferredPrompt}
       />
     </section>
   );

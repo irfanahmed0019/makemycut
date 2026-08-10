@@ -10,15 +10,23 @@ export interface BeforeInstallPromptEvent extends Event {
 
 let deferred: BeforeInstallPromptEvent | null = null;
 const STORAGE_KEY = 'mmc:pwa-installed';
+const LEGACY_STORAGE_KEY = 'pwa_install_state';
 let installed =
-  typeof window !== 'undefined' && window.localStorage.getItem(STORAGE_KEY) === '1';
+  typeof window !== 'undefined' &&
+  (window.localStorage.getItem(STORAGE_KEY) === '1' ||
+    window.localStorage.getItem(LEGACY_STORAGE_KEY) === 'installed');
+let initialized = false;
+let prompting = false;
 const listeners = new Set<() => void>();
 
 const emit = () => listeners.forEach((l) => l());
 
 const markInstalled = () => {
   installed = true;
-  try { window.localStorage.setItem(STORAGE_KEY, '1'); } catch { /* ignore */ }
+  try {
+    window.localStorage.setItem(STORAGE_KEY, '1');
+    window.localStorage.setItem(LEGACY_STORAGE_KEY, 'installed');
+  } catch { /* ignore */ }
 };
 
 export const isAppInstalled = () =>
@@ -36,18 +44,28 @@ export const subscribeInstallPrompt = (cb: () => void) => {
 
 /** Fires the native install prompt. Returns true if the user accepted. */
 export const triggerInstall = async () => {
-  if (!deferred) return false;
+  if (!deferred || prompting) return false;
   const evt = deferred;
-  await evt.prompt();
-  const { outcome } = await evt.userChoice;
-  deferred = null;
-  if (outcome === 'accepted') markInstalled();
-  emit();
-  return outcome === 'accepted';
+  prompting = true;
+  try {
+    await evt.prompt();
+    const { outcome } = await evt.userChoice;
+    deferred = null;
+    if (outcome === 'accepted') markInstalled();
+    emit();
+    return outcome === 'accepted';
+  } catch {
+    deferred = null;
+    emit();
+    return false;
+  } finally {
+    prompting = false;
+  }
 };
 
 export const initInstallPromptCapture = () => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || initialized) return;
+  initialized = true;
   window.addEventListener('beforeinstallprompt', (e: Event) => {
     e.preventDefault();
     deferred = e as BeforeInstallPromptEvent;
