@@ -20,6 +20,20 @@ interface ProfileData {
 
 const isUpi = (v: string) => /^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(v.trim());
 
+/**
+ * The avatars bucket is private, so `profiles.avatar_url` stores the storage
+ * path and the image is displayed through a short-lived signed URL. Legacy
+ * rows hold a full public URL, so the path is extracted from those too.
+ */
+const signedAvatarUrl = async (value: string): Promise<string> => {
+  if (!value) return '';
+  const path = value.includes('/avatars/')
+    ? value.split('/avatars/')[1].split('?')[0]
+    : value;
+  const { data } = await supabase.storage.from('avatars').createSignedUrl(path, 60 * 60);
+  return data?.signedUrl ?? '';
+};
+
 export const Profile = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
@@ -32,6 +46,7 @@ export const Profile = () => {
   const [editName, setEditName] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [avatarSrc, setAvatarSrc] = useState('');
 
   const [upiOpen, setUpiOpen] = useState(false);
   const [upiInput, setUpiInput] = useState('');
@@ -64,6 +79,7 @@ export const Profile = () => {
         });
         setEditName(data.full_name || '');
         setUpiInput(pay?.upi_id || '');
+        setAvatarSrc(await signedAvatarUrl(data.avatar_url || ''));
       }
     })();
   }, [user]);
@@ -89,12 +105,11 @@ export const Profile = () => {
     const path = `${user.id}/avatar-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
     if (upErr) { setUploading(false); toast({ variant: 'destructive', title: 'Upload failed', description: upErr.message }); return; }
-    const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
-    const url = pub.publicUrl;
-    const { error: updErr } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id);
+    const { error: updErr } = await supabase.from('profiles').update({ avatar_url: path }).eq('id', user.id);
     setUploading(false);
     if (updErr) { toast({ variant: 'destructive', title: 'Save failed', description: updErr.message }); return; }
-    setProfile((p) => ({ ...p, avatar_url: url }));
+    setProfile((p) => ({ ...p, avatar_url: path }));
+    setAvatarSrc(await signedAvatarUrl(path));
     toast({ title: 'Profile updated' });
   };
 
@@ -166,8 +181,8 @@ export const Profile = () => {
             className="w-20 h-20 bg-muted rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
             aria-label="Change profile photo"
           >
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            {avatarSrc ? (
+              <img src={avatarSrc} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
               <span className="material-symbols-outlined text-4xl">person</span>
             )}
