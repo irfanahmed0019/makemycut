@@ -49,8 +49,10 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 };
 
-export const useLanguage = () => {
-  const ctx = useContext(LanguageContext);
-  if (!ctx) throw new Error('useLanguage must be used within LanguageProvider');
-  return ctx;
+const fallbackValue: LanguageContextValue = {
+  lang: 'en',
+  setLang: () => {},
+  t: (key: string) => dictionaries.en[key] ?? key,
 };
+
+export const useLanguage = () => useContext(LanguageContext) ?? fallbackValue;
