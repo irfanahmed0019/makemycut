@@ -120,10 +120,15 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
       .order('booking_date', { ascending: true });
 
     if (!error && data) {
-      const upcoming = data.filter((b) => b.status === 'upcoming' || b.status === 'CONFIRMED');
-      const history = data.filter((b) => b.status !== 'upcoming' && b.status !== 'CONFIRMED');
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const isActive = (b: Booking) =>
+        (b.status === 'upcoming' || b.status === 'CONFIRMED') && b.booking_date >= todayStr;
+      const upcoming = data.filter(isActive);
+      const history = data.filter((b) => !isActive(b)).reverse();
       setUpcomingBookings(upcoming);
       setHistoryBookings(history);
+    } else if (error) {
+      reportError('bookings', error.message || 'fetch bookings failed', { user_id: user.id });
     }
   };
 
