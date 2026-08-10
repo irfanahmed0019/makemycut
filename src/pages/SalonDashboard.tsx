@@ -172,8 +172,6 @@ export default function SalonDashboard() {
     return <PageSkeleton />;
   }
 
-  if (showScanner) return <QRScanner onScan={handleQRScan} onClose={() => setShowScanner(false)} />;
-
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border px-4 py-4">
@@ -184,10 +182,6 @@ export default function SalonDashboard() {
       </header>
 
       <main className="p-4 space-y-4">
-        <Button onClick={() => setShowScanner(true)} className="w-full h-14 text-lg" size="lg">
-          <span className="material-symbols-outlined mr-2">qr_code_scanner</span>Scan Customer QR Code
-        </Button>
-
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
