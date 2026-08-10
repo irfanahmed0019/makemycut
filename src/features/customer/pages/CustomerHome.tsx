@@ -36,6 +36,14 @@ const CustomerHome = () => {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  // Switching sections must start at the top — otherwise a scrolled-down home
+  // page leaves the new screen (e.g. Confirm Booking) showing empty space.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [activeSection]);
+
   // Handle directory → home handoff: pick up pending Book/Join Queue from sessionStorage
   useEffect(() => {
     const action = searchParams.get('action');
