@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { NotificationSettings } from './NotificationSettings';
 
 interface ProfileData {
   full_name: string;
@@ -37,6 +38,7 @@ export const Profile = () => {
   const [savingUpi, setSavingUpi] = useState(false);
 
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
 
@@ -243,6 +245,23 @@ export const Profile = () => {
         {/* Share MakeMyCut */}
         <button
           type="button"
+          onClick={() => setNotifOpen(true)}
+          className="w-full flex items-center justify-between py-3 text-left hover:bg-muted/40 rounded-lg px-1"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
+              <span className="material-symbols-outlined">notifications</span>
+            </div>
+            <div>
+              <p className="text-base text-foreground">Notifications</p>
+              <p className="text-xs text-muted-foreground">Appointment alerts & reminders</p>
+            </div>
+          </div>
+          <span className="material-symbols-outlined text-muted-foreground">chevron_right</span>
+        </button>
+
+        <button
+          type="button"
           onClick={handleShareApp}
           className="w-full flex items-center justify-between py-3 text-left hover:bg-muted/40 rounded-lg px-1"
         >
@@ -331,6 +350,8 @@ export const Profile = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <NotificationSettings open={notifOpen} onOpenChange={setNotifOpen} />
     </section>
   );
 };
