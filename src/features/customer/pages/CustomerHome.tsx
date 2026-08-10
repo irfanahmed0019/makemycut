@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PageSkeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { Bookings } from '@/features/customer/components/Bookings';
@@ -29,6 +29,7 @@ const CustomerHome = () => {
   const [queueData, setQueueData] = useState<{ queueId: string; position: number; estimatedWait: number } | null>(null);
   const { user, loading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const mainRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const handler = (e: Event) => { e.preventDefault(); setDeferredPrompt(e as BeforeInstallPromptEvent); };
@@ -42,6 +43,7 @@ const CustomerHome = () => {
     window.scrollTo({ top: 0, behavior: 'auto' });
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
+    if (mainRef.current) mainRef.current.scrollTop = 0;
   }, [activeSection]);
 
   // Handle directory → home handoff: pick up pending Book/Join Queue from sessionStorage
@@ -153,7 +155,7 @@ const CustomerHome = () => {
         </div>
       </header>
 
-      <main className="flex-grow px-4 pb-20 overflow-y-auto">
+      <main ref={mainRef} className="flex-grow px-4 pb-20 overflow-y-auto">
         {activeSection === 'bookings' && user && <Bookings onOpenQueueStatus={handleOpenQueueStatus} />}
         {activeSection === 'bookings' && !user && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
