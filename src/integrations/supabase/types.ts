@@ -733,24 +733,17 @@ export type Database = {
       }
       expire_stale_queue_entries: { Args: never; Returns: undefined }
       get_next_queue_position: { Args: { p_salon_id: string }; Returns: number }
-      get_occupied_slots:
-        | {
-            Args: { p_barber_id: string; p_booking_date: string }
-            Returns: {
-              booking_time: string
-            }[]
-          }
-        | {
-            Args: {
-              p_barber_id: string
-              p_booking_date: string
-              p_chair_id?: string
-            }
-            Returns: {
-              booking_time: string
-              chair_id: string
-            }[]
-          }
+      get_occupied_slots: {
+        Args: {
+          p_barber_id: string
+          p_booking_date: string
+          p_chair_id?: string
+        }
+        Returns: {
+          booking_time: string
+          chair_id: string
+        }[]
+      }
       get_queue_list: {
         Args: { p_salon_id: string }
         Returns: {
@@ -783,6 +776,7 @@ export type Database = {
           p_barber_id: string
           p_booking_date: string
           p_booking_time: string
+          p_chair_id?: string
           p_exclude_booking_id?: string
         }
         Returns: boolean
