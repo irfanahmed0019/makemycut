@@ -53,6 +53,8 @@ export const AdminSalons = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [accessSalon, setAccessSalon] = useState<Salon | null>(null);
   const [filter, setFilter] = useState<FilterMode>('live');
+  const [resetSalon, setResetSalon] = useState<Salon | null>(null);
+  const [resetting, setResetting] = useState(false);
   const pendingDelete = useRef<{ id: string; timeout: NodeJS.Timeout } | null>(null);
   const { toast } = useToast();
 
