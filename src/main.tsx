@@ -4,8 +4,10 @@ import App from "./App.tsx";
 import "./index.css";
 import { registerServiceWorker } from "./pwa";
 import { initMonitoring } from "./lib/monitoring";
+import { initInstallPromptCapture } from "./lib/installPrompt";
 
 initMonitoring();
+initInstallPromptCapture();
 
 createRoot(document.getElementById("root")!).render(
   <HelmetProvider>

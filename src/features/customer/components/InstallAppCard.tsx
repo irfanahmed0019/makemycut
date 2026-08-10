@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
-const isStandalone = () =>
-  window.matchMedia('(display-mode: standalone)').matches ||
-  // iOS Safari
-  (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+import {
+  getInstallPrompt,
+  isAppInstalled,
+  subscribeInstallPrompt,
+  triggerInstall,
+} from '@/lib/installPrompt';
 
 const manualSteps = () => {
   const ua = navigator.userAgent;
@@ -19,36 +15,28 @@ const manualSteps = () => {
 };
 
 export const InstallAppCard = () => {
-  const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [installed, setInstalled] = useState(isStandalone);
+  // The install event is captured globally at app start, so the button works
+  // instantly even though it fired long before Profile mounted.
+  const [canPrompt, setCanPrompt] = useState(Boolean(getInstallPrompt()));
+  const [installed, setInstalled] = useState(isAppInstalled);
   const [showSteps, setShowSteps] = useState(false);
 
-  useEffect(() => {
-    const onPrompt = (e: Event) => {
-      e.preventDefault();
-      setPrompt(e as BeforeInstallPromptEvent);
-    };
-    const onInstalled = () => {
-      setInstalled(true);
-      setPrompt(null);
-    };
-    window.addEventListener('beforeinstallprompt', onPrompt);
-    window.addEventListener('appinstalled', onInstalled);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', onPrompt);
-      window.removeEventListener('appinstalled', onInstalled);
-    };
-  }, []);
+  useEffect(
+    () =>
+      subscribeInstallPrompt(() => {
+        setCanPrompt(Boolean(getInstallPrompt()));
+        setInstalled(isAppInstalled());
+      }),
+    [],
+  );
 
   const handleInstall = async () => {
-    if (!prompt) {
+    if (!getInstallPrompt()) {
       setShowSteps(true);
       return;
     }
-    await prompt.prompt();
-    const { outcome } = await prompt.userChoice;
-    if (outcome === 'accepted') setInstalled(true);
-    setPrompt(null);
+    const accepted = await triggerInstall();
+    if (accepted) setInstalled(true);
   };
 
   if (installed) {
@@ -74,7 +62,7 @@ export const InstallAppCard = () => {
         </div>
       </div>
       <Button className="w-full" onClick={handleInstall}>Install MakeMyCut</Button>
-      {showSteps && !prompt && (
+      {showSteps && !canPrompt && (
         <p className="text-xs text-muted-foreground">{manualSteps()}</p>
       )}
     </div>
