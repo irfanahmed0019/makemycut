@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,27 +8,24 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AreaIndexProvider } from "./contexts/AreaIndexContext";
 import { RoleGate } from "./components/RoleGate";
+import { PageSkeleton } from "@/components/ui/skeleton";
 
 // Customer routes
 import CustomerHome from "@/features/customer/pages/CustomerHome";
 import CustomerAuth from "@/features/customer/pages/CustomerAuth";
 import SalonRedirect from "@/features/customer/pages/SalonRedirect";
-import Reviews from "./pages/Reviews";
-import ResetPassword from "./pages/ResetPassword";
 
-// Salon routes
-import SalonAuth from "@/features/salon/pages/SalonAuth";
-import SalonDashboard from "./pages/SalonDashboard";
-
-// Admin routes
-import AdminDashboard from "@/features/admin/pages/AdminDashboard";
-
-// Barber routes
-import BarberDashboard from "@/features/barber/pages/BarberDashboard";
-
-// Directory (SEO) routes
-import DistrictPage from "@/features/directory/pages/DistrictPage";
-import AreaPage from "@/features/directory/pages/AreaPage";
+// Route-level code splitting: dashboards and secondary pages are only
+// downloaded when a user actually visits them, keeping the customer
+// first load small.
+const Reviews = lazy(() => import("./pages/Reviews"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const SalonAuth = lazy(() => import("@/features/salon/pages/SalonAuth"));
+const SalonDashboard = lazy(() => import("./pages/SalonDashboard"));
+const AdminDashboard = lazy(() => import("@/features/admin/pages/AdminDashboard"));
+const BarberDashboard = lazy(() => import("@/features/barber/pages/BarberDashboard"));
+const DistrictPage = lazy(() => import("@/features/directory/pages/DistrictPage"));
+const AreaPage = lazy(() => import("@/features/directory/pages/AreaPage"));
 
 // Shared
 import NotFound from "./pages/NotFound";
@@ -43,6 +41,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <Suspense fallback={<PageSkeleton />}>
               <Routes>
                 {/* Customer Routes */}
                 <Route path="/" element={<RoleGate allow={["customer"]} allowAnonymous><CustomerHome /></RoleGate>} />
@@ -69,6 +68,7 @@ const App = () => (
                 {/* Catch-all */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
             </BrowserRouter>
           </AreaIndexProvider>
         </LanguageProvider>
