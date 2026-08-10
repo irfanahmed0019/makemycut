@@ -316,10 +316,7 @@ export const Profile = () => {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
               <span className="material-symbols-outlined">mail</span>
             </div>
-            <div>
-              <p className="text-base text-foreground">Contact Us</p>
-              <p className="text-xs text-muted-foreground">{contactEmail}</p>
-            </div>
+            <p className="text-base text-foreground">Contact Us</p>
           </div>
           <span className="material-symbols-outlined text-muted-foreground">chevron_right</span>
         </a>
