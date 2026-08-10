@@ -29,7 +29,7 @@ export const NotificationSettings = ({ open, onOpenChange }: Props) => {
     const ok = await enable();
     toast(
       ok
-        ? { title: 'Notifications enabled', description: 'This device will now receive MakeMyCut alerts.' }
+        ? { title: 'Thanks for allowing notifications ;)', description: 'This device will now receive MakeMyCut alerts.' }
         : { variant: 'destructive', title: 'Could not enable notifications' },
     );
   };
