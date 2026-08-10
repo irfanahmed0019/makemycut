@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          bool_value: boolean
+          created_at: string
+          key: string
+          updated_at: string
+        }
+        Insert: {
+          bool_value?: boolean
+          created_at?: string
+          key: string
+          updated_at?: string
+        }
+        Update: {
+          bool_value?: boolean
+          created_at?: string
+          key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       barber_assignments: {
         Row: {
           chair_id: string | null

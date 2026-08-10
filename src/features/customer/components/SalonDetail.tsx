@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useRatingsEnabled } from '@/hooks/useRatingsEnabled';
 
 interface SalonDetailProps {
   salon: any;
@@ -15,6 +16,7 @@ export const SalonDetail = ({ salon, onBookAppointment, onJoinQueue, onBack }: S
   const [services, setServices] = useState<any[]>([]);
   const [queueLength, setQueueLength] = useState(0);
   const [settings, setSettings] = useState<any>(null);
+  const ratingsEnabled = useRatingsEnabled();
 
   useEffect(() => {
     const fetch = async () => {
@@ -52,11 +54,13 @@ export const SalonDetail = ({ salon, onBookAppointment, onJoinQueue, onBack }: S
               <div className="flex-1">
                 <h2 className="text-lg font-bold">{salon.name}</h2>
                 {salon.address && <p className="text-sm text-muted-foreground">{salon.address}</p>}
-                <div className="flex items-center gap-2 mt-1 text-sm">
-                  <span className="material-symbols-outlined text-primary text-base">star</span>
-                  <span>{salon.rating || 0}</span>
-                  <span className="text-muted-foreground">({salon.review_count || 0} reviews)</span>
-                </div>
+                {ratingsEnabled && (
+                  <div className="flex items-center gap-2 mt-1 text-sm">
+                    <span className="material-symbols-outlined text-primary text-base">star</span>
+                    <span>{salon.rating || 0}</span>
+                    <span className="text-muted-foreground">({salon.review_count || 0} reviews)</span>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
