@@ -10,21 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { QRScanner } from '@/components/salon/QRScanner';
 import { DashboardAnalytics } from '@/components/salon/DashboardAnalytics';
 import { OwnerQueueTab } from '@/features/salon/components/OwnerQueueTab';
 import { OwnerSettingsTab } from '@/features/salon/components/OwnerSettingsTab';
 import { SalonQRCodes } from '@/features/salon/components/SalonQRCodes';
 import { cn } from '@/lib/utils';
-import { z } from 'zod';
-
-// QR payloads come from an untrusted source (any printed/forged code), so the
-// decoded text is size-capped and schema-validated before it is used.
-const QR_MAX_LENGTH = 1000;
-const QRBookingSchema = z.object({
-  bookingId: z.string().uuid(),
-  userId: z.string().uuid(),
-});
 
 interface Booking {
   id: string;
