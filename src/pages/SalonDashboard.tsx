@@ -16,6 +16,15 @@ import { OwnerQueueTab } from '@/features/salon/components/OwnerQueueTab';
 import { OwnerSettingsTab } from '@/features/salon/components/OwnerSettingsTab';
 import { SalonQRCodes } from '@/features/salon/components/SalonQRCodes';
 import { cn } from '@/lib/utils';
+import { z } from 'zod';
+
+// QR payloads come from an untrusted source (any printed/forged code), so the
+// decoded text is size-capped and schema-validated before it is used.
+const QR_MAX_LENGTH = 1000;
+const QRBookingSchema = z.object({
+  bookingId: z.string().uuid(),
+  userId: z.string().uuid(),
+});
 
 interface Booking {
   id: string;
@@ -106,13 +115,20 @@ export default function SalonDashboard() {
     .reduce((sum, b) => sum + (b.services?.price || 0), 0);
 
   const handleQRScan = async (qrData: string) => {
+    if (typeof qrData !== 'string' || qrData.length > QR_MAX_LENGTH) {
+      toast({ variant: 'destructive', title: 'Invalid QR Code', description: 'QR code data is too large.' });
+      return;
+    }
+
+    let bookingData: z.infer<typeof QRBookingSchema>;
     try {
-      const bookingData = JSON.parse(qrData);
-      const isUuid = (v: unknown) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
-      if (!bookingData || !isUuid(bookingData.bookingId) || !isUuid(bookingData.userId)) {
-        toast({ variant: 'destructive', title: 'Invalid QR Code', description: 'QR data is malformed.' });
-        return;
-      }
+      bookingData = QRBookingSchema.parse(JSON.parse(qrData));
+    } catch {
+      toast({ variant: 'destructive', title: 'Invalid QR Code', description: 'This QR code format is not recognized.' });
+      return;
+    }
+
+    try {
       const booking = allBookings.find((b) => b.id === bookingData.bookingId && b.user_id === bookingData.userId);
       if (!booking) { toast({ variant: 'destructive', title: 'Invalid QR Code' }); return; }
       if (booking.status === 'completed') { toast({ variant: 'destructive', title: 'Already Completed' }); return; }
