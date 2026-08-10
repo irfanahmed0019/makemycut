@@ -21,7 +21,7 @@ export const EnableNotificationsPrompt = () => {
     const ok = await enable();
     toast(
       ok
-        ? { title: 'Notifications enabled', description: 'We will alert you about this appointment.' }
+        ? { title: 'Thanks for allowing notifications ;)', description: 'We will alert you about this appointment.' }
         : { variant: 'destructive', title: 'Could not enable notifications' },
     );
   };
