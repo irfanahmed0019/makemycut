@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ChairsManager } from './ChairsManager';
 import { StaffManager } from './StaffManager';
 import { TimeSlotsManager } from '@/components/salon/TimeSlotsManager';
+import { TomorrowRemindersCard } from './TomorrowRemindersCard';
 import { SectionSkeleton } from '@/components/ui/skeleton';
 
 interface OwnerSettingsTabProps {
@@ -85,6 +86,9 @@ export const OwnerSettingsTab = ({ barberId, barberName }: OwnerSettingsTabProps
 
       {/* Booking time slots */}
       <TimeSlotsManager salonId={barberId} />
+
+      {/* Reminders */}
+      <TomorrowRemindersCard salonId={barberId} salonName={barberName} />
 
       {/* Salon Info */}
       <Card>
