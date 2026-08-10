@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import {
   getInstallPrompt,
   isAppInstalled,
@@ -20,6 +21,10 @@ export const InstallAppCard = () => {
   const [canPrompt, setCanPrompt] = useState(Boolean(getInstallPrompt()));
   const [installed, setInstalled] = useState(isAppInstalled);
   const [showSteps, setShowSteps] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
+  const timer = useRef<number | null>(null);
+
+  useEffect(() => () => { if (timer.current) window.clearInterval(timer.current); }, []);
 
   useEffect(
     () =>
@@ -30,13 +35,36 @@ export const InstallAppCard = () => {
     [],
   );
 
+  const runProgress = () => {
+    const total = 23000;
+    const start = Date.now();
+    setProgress(0);
+    if (timer.current) window.clearInterval(timer.current);
+    timer.current = window.setInterval(() => {
+      const pct = Math.min(100, ((Date.now() - start) / total) * 100);
+      setProgress(pct);
+      if (pct >= 100 && timer.current) {
+        window.clearInterval(timer.current);
+        timer.current = null;
+        setProgress(null);
+      }
+    }, 200);
+  };
+
   const handleInstall = async () => {
+    if (progress !== null) return;
     if (!getInstallPrompt()) {
       setShowSteps(true);
       return;
     }
+    runProgress();
     const accepted = await triggerInstall();
-    if (accepted) setInstalled(true);
+    if (accepted) {
+      setInstalled(true);
+      if (timer.current) window.clearInterval(timer.current);
+      timer.current = null;
+      setProgress(null);
+    }
   };
 
   if (installed) {
@@ -61,7 +89,15 @@ export const InstallAppCard = () => {
           <p className="text-xs text-muted-foreground">Get faster access and an app-like experience.</p>
         </div>
       </div>
-      <Button className="w-full" onClick={handleInstall}>Install MakeMyCut</Button>
+      <Button className="w-full" onClick={handleInstall} disabled={progress !== null}>
+        {progress !== null ? 'Installing…' : 'Install MakeMyCut'}
+      </Button>
+      {progress !== null && (
+        <div className="space-y-1">
+          <Progress value={progress} className="h-2" />
+          <p className="text-xs text-muted-foreground">Setting up MakeMyCut on your device…</p>
+        </div>
+      )}
       {showSteps && !canPrompt && (
         <p className="text-xs text-muted-foreground">{manualSteps()}</p>
       )}
