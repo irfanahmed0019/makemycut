@@ -33,7 +33,7 @@ export default defineConfig(({ mode }) => ({
         // Open links to this origin inside the installed app when supported.
         launch_handler: { client_mode: ["navigate-existing", "auto"] },
         handle_links: "preferred",
-        capture_links: "existing-client-navigate",
+        ...({ capture_links: "existing-client-navigate" } as Record<string, unknown>),
         shortcuts: [
           {
             name: "Book a slot",
