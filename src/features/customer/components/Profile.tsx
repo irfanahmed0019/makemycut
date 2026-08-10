@@ -58,6 +58,7 @@ export const Profile = () => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
+  const { isAdmin } = useAdminCheck();
 
   useEffect(() => {
     if (!user) return;
