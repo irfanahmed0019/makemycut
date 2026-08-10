@@ -128,7 +128,7 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
       setUpcomingBookings(upcoming);
       setHistoryBookings(history);
     } else if (error) {
-      reportError('bookings', error.message || 'fetch bookings failed', { user_id: user.id });
+      reportError('database', error.message || 'fetch bookings failed', { user_id: user.id });
     }
   };
 
