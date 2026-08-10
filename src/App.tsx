@@ -28,6 +28,7 @@ const DistrictPage = lazy(() => import("@/features/directory/pages/DistrictPage"
 const AreaPage = lazy(() => import("@/features/directory/pages/AreaPage"));
 
 // Shared
+import DevBooking from "./pages/__DevBooking";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ const App = () => (
                 <Route path="/barber-dashboard" element={<RoleGate allow={["barber"]}><BarberDashboard /></RoleGate>} />
 
                 {/* Catch-all */}
+                <Route path="/__devbooking" element={<DevBooking />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </Suspense>
