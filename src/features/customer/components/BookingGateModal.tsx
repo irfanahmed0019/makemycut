@@ -7,18 +7,12 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { authErrorMessage } from '@/lib/authErrors';
 import mmcBlockLogo from '@/assets/mmc-block-logo.png';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+import { getInstallPrompt, triggerInstall } from '@/lib/installPrompt';
 
 interface BookingGateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  deferredPrompt: BeforeInstallPromptEvent | null;
-  setDeferredPrompt: (prompt: BeforeInstallPromptEvent | null) => void;
 }
 
 type GateView = 'options' | 'login' | 'signup';
@@ -27,8 +21,6 @@ export const BookingGateModal = ({
   isOpen,
   onClose,
   onSuccess,
-  deferredPrompt,
-  setDeferredPrompt,
 }: BookingGateModalProps) => {
   const { signIn, signUp, signInWithGoogle } = useAuth();
   const { toast } = useToast();
@@ -38,23 +30,20 @@ export const BookingGateModal = ({
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
+  const [installing, setInstalling] = useState(false);
 
   if (!isOpen) return null;
 
   const handleInstallAndConfirm = async () => {
-    if (!deferredPrompt) {
+    if (installing) return;
+    if (!getInstallPrompt()) {
       // No install prompt available, go to web login
       setView('login');
       return;
     }
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-      localStorage.setItem('pwa_install_state', 'installed');
-    }
-    setDeferredPrompt(null);
+    setInstalling(true);
+    await triggerInstall();
+    setInstalling(false);
     // After install attempt, show login
     setView('login');
   };
@@ -155,10 +144,11 @@ export const BookingGateModal = ({
               <div className="space-y-3">
                 <Button
                   onClick={handleInstallAndConfirm}
+                  disabled={installing}
                   className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl text-base"
                 >
                   <Smartphone className="mr-2 h-5 w-5" />
-                  Install App & Confirm
+                  {installing ? 'Opening install…' : 'Install App & Confirm'}
                 </Button>
 
                 <button
