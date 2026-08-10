@@ -305,7 +305,10 @@ export default function CustomerAuth() {
 
               <div className="space-y-1">
                 <Label htmlFor="phone" className="text-sm font-medium text-foreground">Phone Number</Label>
-                <Input id="phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} required placeholder="+1 (555) 000-0000" className={`h-12 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.phone ? 'border-destructive' : ''}`} />
+                <div className="flex items-end gap-2">
+                  <span className="h-12 flex items-center text-foreground border-b border-[hsl(0,0%,12%)]">{COUNTRY_CODE}</span>
+                  <Input id="phone" type="tel" inputMode="numeric" value={phone} onChange={e => setPhone(localDigits(e.target.value))} required placeholder="98765 43210" className={`h-12 flex-1 bg-transparent border-0 border-b border-[hsl(0,0%,12%)] rounded-none px-0 text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:border-primary transition-colors ${errors.phone ? 'border-destructive' : ''}`} />
+                </div>
                 {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
               </div>
 
