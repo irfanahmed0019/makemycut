@@ -104,8 +104,8 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     const booked = await fetchBookedSlots(barber.id, dateStr, undefined, selectedChair || null);
     setBookedSlots(booked);
 
-    if (booked.has(selectedTime)) {
-      const available = timeSlots.find((t) => !booked.has(t));
+    if (booked.has(selectedTime) || isSlotPast(selectedDate, selectedTime)) {
+      const available = timeSlots.find((t) => !booked.has(t) && !isSlotPast(selectedDate, t));
       if (available) setSelectedTime(available);
     }
   };
