@@ -1,17 +1,16 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-// Reminder lead times (minutes before the slot): 24h, 1h, 30m, 10m.
+// Reminder lead times (minutes before the slot): 24h, 30m, 5m.
 // Adaptive — a lead time is skipped when the booking was made after it passed.
-const OFFSETS = [1440, 60, 30, 10];
+const OFFSETS = [1440, 30, 5];
 // Salon timezone offset (IST) in minutes — booking_date/booking_time are local.
 const TZ_OFFSET_MIN = 330;
 
 const message = (o: number, salon: string) => {
   if (o === 1440) return { title: "Appointment tomorrow", body: `Your appointment at ${salon} is tomorrow. See you then!` };
-  if (o === 60) return { title: "Appointment in 1 hour", body: `Your appointment at ${salon} is in 1 hour. Get ready!` };
-  if (o === 30) return { title: "Appointment in 30 minutes", body: `Your appointment at ${salon} starts in 30 minutes.` };
-  return { title: "Appointment in 10 minutes", body: `You're due at ${salon} in 10 minutes.` };
+  if (o === 30) return { title: "Appointment coming up", body: `Your appointment at ${salon} is in 30 minutes — time to head over.` };
+  return { title: "Appointment in 5 minutes", body: `Your appointment at ${salon} starts in 5 minutes.` };
 };
 
 Deno.serve(async (req) => {
