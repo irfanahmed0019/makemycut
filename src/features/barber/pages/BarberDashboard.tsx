@@ -159,13 +159,20 @@ export default function BarberDashboard() {
   useEffect(() => {
     if (role !== 'barber' || !salonId) return;
     fetchAll();
+    const scheduleRefresh = () => {
+      if (refreshTimer.current) window.clearTimeout(refreshTimer.current);
+      refreshTimer.current = window.setTimeout(() => fetchAll(), 400);
+    };
     const channel = supabase
       .channel(`barber-${salonId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'queues', filter: `salon_id=eq.${salonId}` }, () => fetchAll())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `barber_id=eq.${salonId}` }, () => fetchAll())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chair_transfer_requests' }, () => fetchAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'queues', filter: `salon_id=eq.${salonId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `barber_id=eq.${salonId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chair_transfer_requests' }, scheduleRefresh)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (refreshTimer.current) window.clearTimeout(refreshTimer.current);
+      supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, salonId, chairId]);
 
