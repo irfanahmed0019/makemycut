@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PageSkeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,17 +43,35 @@ interface Barber {
   name: string;
 }
 
+const CACHE_KEY = 'mmc_salon_dashboard_cache_v1';
+
+const readCache = (): { barber: Barber; bookings: Booking[] } | null => {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
+
+// Only load a useful window of bookings instead of the salon's entire history.
+const windowStart = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 60);
+  return d.toISOString().slice(0, 10);
+};
+
 export default function SalonDashboard() {
+  const cached = readCache();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [allBookings, setAllBookings] = useState<Booking[]>([]);
-  const [barber, setBarber] = useState<Barber | null>(null);
+  const [allBookings, setAllBookings] = useState<Booking[]>(cached?.bookings ?? []);
+  const [barber, setBarber] = useState<Barber | null>(cached?.barber ?? null);
   const [showScanner, setShowScanner] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!cached);
   const [activeTab, setActiveTab] = useState('appointments');
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const refreshTimer = useRef<number | null>(null);
 
   useEffect(() => {
     if (!loading && !user) navigate('/salon-login');
@@ -64,16 +82,23 @@ export default function SalonDashboard() {
       .from('bookings')
       .select('id, user_id, booking_date, booking_time, status, payment_status, services:service_id(name, price)')
       .eq('barber_id', barberId)
+      .gte('booking_date', windowStart())
       .order('booking_date', { ascending: true })
       .order('booking_time', { ascending: true });
     if (error) return [];
-    const bookingsWithProfiles = await Promise.all(
-      (bookingsData || []).map(async (booking) => {
-        const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('id', booking.user_id).maybeSingle();
-        return { ...booking, customer_name: profile?.full_name || 'Customer', customer_phone: profile?.phone || null };
-      })
-    );
-    return bookingsWithProfiles;
+    const rows = bookingsData || [];
+    // One batched profile lookup instead of a query per booking.
+    const userIds = Array.from(new Set(rows.map((b) => b.user_id).filter(Boolean)));
+    const profileMap: Record<string, { full_name: string | null; phone: string | null }> = {};
+    if (userIds.length > 0) {
+      const { data: profs } = await supabase.from('profiles').select('id, full_name, phone').in('id', userIds);
+      (profs || []).forEach((p) => { profileMap[p.id] = { full_name: p.full_name, phone: p.phone }; });
+    }
+    return rows.map((booking) => ({
+      ...booking,
+      customer_name: profileMap[booking.user_id]?.full_name || 'Customer',
+      customer_phone: profileMap[booking.user_id]?.phone || undefined,
+    }));
   };
 
   useEffect(() => {
@@ -81,6 +106,7 @@ export default function SalonDashboard() {
       if (!user) return;
       const { data: barberData, error } = await supabase.from('barbers').select('id, name').eq('owner_id', user.id).maybeSingle();
       if (error || !barberData) {
+        sessionStorage.removeItem(CACHE_KEY);
         toast({ variant: 'destructive', title: 'Access Denied', description: 'You are not registered as a salon owner.' });
         navigate('/salon-login');
         return;
@@ -89,21 +115,37 @@ export default function SalonDashboard() {
       const bookingsWithProfiles = await fetchBookings(barberData.id);
       setAllBookings(bookingsWithProfiles);
       setIsLoading(false);
+      try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ barber: barberData, bookings: bookingsWithProfiles }));
+      } catch { /* ignore quota */ }
     };
     fetchBarberAndBookings();
   }, [user, navigate, toast]);
 
   useEffect(() => {
     if (!barber) return;
-    const channel = supabase
-      .channel('salon-bookings')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `barber_id=eq.${barber.id}` }, async (payload) => {
+    // Realtime bursts (several rows changing at once) collapse into one refetch.
+    const scheduleRefresh = () => {
+      if (refreshTimer.current) window.clearTimeout(refreshTimer.current);
+      refreshTimer.current = window.setTimeout(async () => {
         const updated = await fetchBookings(barber.id);
         setAllBookings(updated);
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ barber, bookings: updated }));
+        } catch { /* ignore quota */ }
+      }, 400);
+    };
+    const channel = supabase
+      .channel('salon-bookings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `barber_id=eq.${barber.id}` }, (payload) => {
+        scheduleRefresh();
         if (payload.eventType === 'INSERT') toast({ title: 'New Booking!', description: 'A new appointment has been booked.' });
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (refreshTimer.current) window.clearTimeout(refreshTimer.current);
+      supabase.removeChannel(channel);
+    };
   }, [barber, toast]);
 
   useEffect(() => {
