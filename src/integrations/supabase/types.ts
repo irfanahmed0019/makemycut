@@ -775,6 +775,7 @@ export type Database = {
       }
     }
     Functions: {
+      admin_delete_salon: { Args: { p_salon_id: string }; Returns: boolean }
       admin_list_admins: {
         Args: never
         Returns: {
