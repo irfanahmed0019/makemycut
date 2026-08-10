@@ -12,9 +12,13 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { useUserRole } from '@/hooks/useUserRole';
 import { homePathForRole } from '@/components/RoleGate';
 import { authErrorMessage } from '@/lib/authErrors';
+import { COUNTRY_CODE, localDigits, phoneError } from '@/lib/phone';
 const signUpSchema = z.object({
   fullName: z.string().trim().min(2, 'Name must be at least 2 characters').max(100).regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
-  phone: z.string().trim().regex(/^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/, 'Invalid phone number format'),
+  phone: z.string().trim().superRefine((val, ctx) => {
+    const err = phoneError(val);
+    if (err) ctx.addIssue({ code: z.ZodIssueCode.custom, message: err });
+  }).transform(val => `${COUNTRY_CODE}${localDigits(val)}`),
   email: z.string().trim().email('Invalid email address').max(255),
   password: z.string().min(8, 'Password must be at least 8 characters').max(72).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain uppercase, lowercase, and number')
 });
