@@ -164,6 +164,11 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
       return;
     }
 
+    if (isSlotPast(selectedDate, selectedTime)) {
+      toast({ variant: 'destructive', title: 'Time Already Passed', description: 'Please pick a slot later than the current time.' });
+      return;
+    }
+
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const time24 = to24h(selectedTime);
 
