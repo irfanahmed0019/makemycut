@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { fetchBookedSlots, isSlotTaken, to12h, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS } from '../lib/slotAvailability';
 import { reportError } from '@/lib/monitoring';
+import { sendPush } from '@/lib/notify';
 
 interface Booking {
   id: string;
@@ -189,6 +190,14 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
       return;
     }
     toast({ title: 'Booking cancelled.', description: 'The slot is now available for others.' });
+    sendPush({
+      userId: user.id,
+      title: 'Appointment cancelled',
+      body: 'Your appointment has been cancelled. Book another slot whenever you are ready.',
+      url: '/',
+      appointmentId: bookingId,
+      notificationType: 'appointment_cancelled',
+    });
     setCancelTarget(null);
     fetchBookings();
   };
@@ -290,6 +299,14 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
       return;
     }
     toast({ title: 'Booking rescheduled', description: `${format(reschedDate, 'MMM dd, yyyy')} at ${reschedTime}` });
+    sendPush({
+      userId: user.id,
+      title: 'Appointment rescheduled',
+      body: `Your appointment is now on ${format(reschedDate, 'MMM dd')} at ${reschedTime}.`,
+      url: '/',
+      appointmentId: rescheduleTarget.id,
+      notificationType: 'appointment_rescheduled',
+    });
     setRescheduleTarget(null);
     fetchBookings();
   };
