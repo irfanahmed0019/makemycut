@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import { useUserRole } from '@/hooks/useUserRole';
+import { resolveUserRole } from '@/hooks/useUserRole';
 import { homePathForRole } from '@/components/RoleGate';
 import { authErrorMessage } from '@/lib/authErrors';
 
@@ -22,36 +22,38 @@ export default function SalonAuth() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isCheckingSalon, setIsCheckingSalon] = useState(false);
-  const [justSignedIn, setJustSignedIn] = useState(false);
   const { signIn, user, loading } = useAuth();
-  const { role, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (!user || loading || roleLoading || !justSignedIn) return;
-    setIsCheckingSalon(true);
-    if (role === 'customer') {
-      toast({ variant: 'destructive', title: 'Access Denied', description: 'You are not registered as a salon owner or barber.' });
-    } else {
-      navigate(homePathForRole(role), { replace: true });
-    }
-    setIsCheckingSalon(false);
-    setJustSignedIn(false);
-  }, [user, loading, roleLoading, role, justSignedIn, navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     try {
       const validatedData = signInSchema.parse({ email, password });
+      setIsCheckingSalon(true);
       const { error } = await signIn(validatedData.email, validatedData.password);
-      if (!error) {
-        setJustSignedIn(true);
-      } else {
+      if (error) {
+        setIsCheckingSalon(false);
         toast({ variant: 'destructive', title: 'Login Failed', description: authErrorMessage(error) });
+        return;
+      }
+      const { data } = await supabase.auth.getUser();
+      const uid = data.user?.id;
+      if (!uid) {
+        setIsCheckingSalon(false);
+        toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not start your session. Please try again.' });
+        return;
+      }
+      const { role } = await resolveUserRole(uid);
+      setIsCheckingSalon(false);
+      if (role === 'customer') {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'You are not registered as a salon owner or barber.' });
+      } else {
+        navigate(homePathForRole(role), { replace: true });
       }
     } catch (error) {
+      setIsCheckingSalon(false);
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
         error.errors.forEach((err) => { if (err.path[0]) fieldErrors[err.path[0] as string] = err.message; });
