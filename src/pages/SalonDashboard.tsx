@@ -145,32 +145,6 @@ export default function SalonDashboard() {
     .filter((b) => isToday(parseISO(b.booking_date)) && b.status === 'completed')
     .reduce((sum, b) => sum + (b.services?.price || 0), 0);
 
-  const handleQRScan = async (qrData: string) => {
-    if (typeof qrData !== 'string' || qrData.length > QR_MAX_LENGTH) {
-      toast({ variant: 'destructive', title: 'Invalid QR Code', description: 'QR code data is too large.' });
-      return;
-    }
-
-    let bookingData: z.infer<typeof QRBookingSchema>;
-    try {
-      bookingData = QRBookingSchema.parse(JSON.parse(qrData));
-    } catch {
-      toast({ variant: 'destructive', title: 'Invalid QR Code', description: 'This QR code format is not recognized.' });
-      return;
-    }
-
-    try {
-      const booking = allBookings.find((b) => b.id === bookingData.bookingId && b.user_id === bookingData.userId);
-      if (!booking) { toast({ variant: 'destructive', title: 'Invalid QR Code' }); return; }
-      if (booking.status === 'completed') { toast({ variant: 'destructive', title: 'Already Completed' }); return; }
-      const { error } = await supabase.from('bookings').update({ status: 'completed' }).eq('id', bookingData.bookingId);
-      if (error) throw error;
-      setAllBookings((prev) => prev.map((b) => b.id === bookingData.bookingId ? { ...b, status: 'completed' } : b));
-      toast({ title: 'Check-in Successful!', description: `${booking.customer_name} has been checked in.` });
-      setShowScanner(false);
-    } catch { toast({ variant: 'destructive', title: 'Scan Failed' }); }
-  };
-
   const handleMarkCompleted = async (bookingId: string) => {
     const { error } = await supabase.from('bookings').update({ status: 'completed' }).eq('id', bookingId);
     if (error) { toast({ variant: 'destructive', title: 'Error', description: 'Could not update.' }); return; }
