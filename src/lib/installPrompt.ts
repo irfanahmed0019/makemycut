@@ -9,10 +9,17 @@ export interface BeforeInstallPromptEvent extends Event {
 }
 
 let deferred: BeforeInstallPromptEvent | null = null;
-let installed = false;
+const STORAGE_KEY = 'mmc:pwa-installed';
+let installed =
+  typeof window !== 'undefined' && window.localStorage.getItem(STORAGE_KEY) === '1';
 const listeners = new Set<() => void>();
 
 const emit = () => listeners.forEach((l) => l());
+
+const markInstalled = () => {
+  installed = true;
+  try { window.localStorage.setItem(STORAGE_KEY, '1'); } catch { /* ignore */ }
+};
 
 export const isAppInstalled = () =>
   installed ||
@@ -34,7 +41,7 @@ export const triggerInstall = async () => {
   await evt.prompt();
   const { outcome } = await evt.userChoice;
   deferred = null;
-  if (outcome === 'accepted') installed = true;
+  if (outcome === 'accepted') markInstalled();
   emit();
   return outcome === 'accepted';
 };
@@ -47,7 +54,7 @@ export const initInstallPromptCapture = () => {
     emit();
   });
   window.addEventListener('appinstalled', () => {
-    installed = true;
+    markInstalled();
     deferred = null;
     emit();
   });
