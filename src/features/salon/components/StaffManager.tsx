@@ -23,6 +23,23 @@ export const StaffManager = ({ salonId }: { salonId: string }) => {
   const [email, setEmail] = useState('');
   const [userId, setUserId] = useState('');
   const [chairId, setChairId] = useState<string>('');
+  const [results, setResults] = useState<{ user_id: string; email: string; full_name: string | null; phone: string | null }[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  const handleSearch = async () => {
+    const q = email.trim();
+    if (!q) return;
+    setSearching(true);
+    const { data, error } = await supabase.rpc('owner_search_users' as any, { p_salon_id: salonId, p_query: q });
+    setSearching(false);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Search failed', description: error.message });
+      return;
+    }
+    const list = (data as any[]) || [];
+    setResults(list);
+    if (list.length === 0) toast({ title: 'No account found', description: 'Ask them to sign up first.' });
+  };
 
   const fetchAll = async () => {
     const [{ data: aData }, { data: cData }] = await Promise.all([
@@ -48,7 +65,7 @@ export const StaffManager = ({ salonId }: { salonId: string }) => {
   const handleAssign = async () => {
     const uid = userId.trim();
     if (!uid) {
-      toast({ variant: 'destructive', title: 'Missing user', description: 'Paste the barber\'s user ID. They must sign up first.' });
+      toast({ variant: 'destructive', title: 'Select an account', description: 'Search by email and pick the barber first.' });
       return;
     }
     // Add user_roles entry as barber
@@ -62,7 +79,7 @@ export const StaffManager = ({ salonId }: { salonId: string }) => {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
       return;
     }
-    setUserId(''); setEmail('');
+    setUserId(''); setEmail(''); setResults([]);
     fetchAll();
     toast({ title: 'Barber assigned' });
   };
@@ -79,13 +96,36 @@ export const StaffManager = ({ salonId }: { salonId: string }) => {
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-xs text-muted-foreground">
-          Ask your barber to sign up first, then paste their user ID here to assign them to a chair. They'll then be able to sign in and see their own dashboard.
+          Ask your barber to sign up first, then find them by email (or name/phone) and assign them to a chair. They'll then be able to sign in and see their own dashboard.
         </p>
         <div className="space-y-2">
           <div>
-            <Label>Barber user ID</Label>
-            <Input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="uuid…" />
+            <Label>Find an account</Label>
+            <div className="flex gap-2">
+              <Input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                placeholder="Email, name or phone"
+              />
+              <Button variant="secondary" onClick={handleSearch} disabled={searching}>Search</Button>
+            </div>
           </div>
+          {results.length > 0 && (
+            <div className="space-y-1">
+              {results.map((r) => (
+                <button
+                  key={r.user_id}
+                  type="button"
+                  onClick={() => setUserId(r.user_id)}
+                  className={`w-full text-left border rounded-lg p-2 text-sm ${userId === r.user_id ? 'border-primary' : 'border-border'}`}
+                >
+                  <span className="font-medium">{r.full_name || 'User'}</span>
+                  <span className="block text-xs text-muted-foreground">{r.email}{r.phone ? ` · ${r.phone}` : ''}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <div>
             <Label>Assign to chair</Label>
             <select

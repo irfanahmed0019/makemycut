@@ -915,6 +915,15 @@ export type Database = {
       }
       normalize_in_phone: { Args: { p_phone: string }; Returns: string }
       normalize_slug: { Args: { val: string }; Returns: string }
+      owner_search_users: {
+        Args: { p_query: string; p_salon_id: string }
+        Returns: {
+          email: string
+          full_name: string
+          phone: string
+          user_id: string
+        }[]
+      }
       place_hold:
         | {
             Args: {
