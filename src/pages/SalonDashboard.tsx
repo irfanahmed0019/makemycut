@@ -10,21 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { QRScanner } from '@/components/salon/QRScanner';
 import { DashboardAnalytics } from '@/components/salon/DashboardAnalytics';
 import { OwnerQueueTab } from '@/features/salon/components/OwnerQueueTab';
 import { OwnerSettingsTab } from '@/features/salon/components/OwnerSettingsTab';
 import { SalonQRCodes } from '@/features/salon/components/SalonQRCodes';
 import { cn } from '@/lib/utils';
-import { z } from 'zod';
-
-// QR payloads come from an untrusted source (any printed/forged code), so the
-// decoded text is size-capped and schema-validated before it is used.
-const QR_MAX_LENGTH = 1000;
-const QRBookingSchema = z.object({
-  bookingId: z.string().uuid(),
-  userId: z.string().uuid(),
-});
 
 interface Booking {
   id: string;
@@ -65,7 +55,6 @@ export default function SalonDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [allBookings, setAllBookings] = useState<Booking[]>(cached?.bookings ?? []);
   const [barber, setBarber] = useState<Barber | null>(cached?.barber ?? null);
-  const [showScanner, setShowScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(!cached);
   const [activeTab, setActiveTab] = useState('appointments');
   const { user, signOut, loading } = useAuth();
@@ -156,32 +145,6 @@ export default function SalonDashboard() {
     .filter((b) => isToday(parseISO(b.booking_date)) && b.status === 'completed')
     .reduce((sum, b) => sum + (b.services?.price || 0), 0);
 
-  const handleQRScan = async (qrData: string) => {
-    if (typeof qrData !== 'string' || qrData.length > QR_MAX_LENGTH) {
-      toast({ variant: 'destructive', title: 'Invalid QR Code', description: 'QR code data is too large.' });
-      return;
-    }
-
-    let bookingData: z.infer<typeof QRBookingSchema>;
-    try {
-      bookingData = QRBookingSchema.parse(JSON.parse(qrData));
-    } catch {
-      toast({ variant: 'destructive', title: 'Invalid QR Code', description: 'This QR code format is not recognized.' });
-      return;
-    }
-
-    try {
-      const booking = allBookings.find((b) => b.id === bookingData.bookingId && b.user_id === bookingData.userId);
-      if (!booking) { toast({ variant: 'destructive', title: 'Invalid QR Code' }); return; }
-      if (booking.status === 'completed') { toast({ variant: 'destructive', title: 'Already Completed' }); return; }
-      const { error } = await supabase.from('bookings').update({ status: 'completed' }).eq('id', bookingData.bookingId);
-      if (error) throw error;
-      setAllBookings((prev) => prev.map((b) => b.id === bookingData.bookingId ? { ...b, status: 'completed' } : b));
-      toast({ title: 'Check-in Successful!', description: `${booking.customer_name} has been checked in.` });
-      setShowScanner(false);
-    } catch { toast({ variant: 'destructive', title: 'Scan Failed' }); }
-  };
-
   const handleMarkCompleted = async (bookingId: string) => {
     const { error } = await supabase.from('bookings').update({ status: 'completed' }).eq('id', bookingId);
     if (error) { toast({ variant: 'destructive', title: 'Error', description: 'Could not update.' }); return; }
@@ -209,8 +172,6 @@ export default function SalonDashboard() {
     return <PageSkeleton />;
   }
 
-  if (showScanner) return <QRScanner onScan={handleQRScan} onClose={() => setShowScanner(false)} />;
-
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border px-4 py-4">
@@ -221,10 +182,6 @@ export default function SalonDashboard() {
       </header>
 
       <main className="p-4 space-y-4">
-        <Button onClick={() => setShowScanner(true)} className="w-full h-14 text-lg" size="lg">
-          <span className="material-symbols-outlined mr-2">qr_code_scanner</span>Scan Customer QR Code
-        </Button>
-
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
