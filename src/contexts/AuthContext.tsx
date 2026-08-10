@@ -131,7 +131,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Always clear the local session first. A stale/expired refresh token makes
+    // the server return 403 "Session not found", which must not block logout.
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch {
+      /* ignore — local state is cleared below regardless */
+    }
+    clearRoleCache();
+    try { sessionStorage.clear(); } catch { /* ignore */ }
+    setSession(null);
+    setUser(null);
     toast({
       title: "Signed out",
       description: "You have been signed out successfully."
