@@ -276,6 +276,7 @@ export type Database = {
           appointment_reminders: boolean
           appointment_updates: boolean
           created_at: string
+          last_minute_alerts: boolean
           promotions: boolean
           updated_at: string
           user_id: string
@@ -284,6 +285,7 @@ export type Database = {
           appointment_reminders?: boolean
           appointment_updates?: boolean
           created_at?: string
+          last_minute_alerts?: boolean
           promotions?: boolean
           updated_at?: string
           user_id: string
@@ -292,6 +294,7 @@ export type Database = {
           appointment_reminders?: boolean
           appointment_updates?: boolean
           created_at?: string
+          last_minute_alerts?: boolean
           promotions?: boolean
           updated_at?: string
           user_id?: string
