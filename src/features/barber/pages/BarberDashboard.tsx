@@ -86,6 +86,7 @@ export default function BarberDashboard() {
     try { const raw = localStorage.getItem(SESSION_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
   });
   const [nowMs, setNowMs] = useState<number>(Date.now());
+  const refreshTimer = useRef<number | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/salon-login');
