@@ -1,12 +1,17 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-// Reminder lead times (minutes before the slot).
-const OFFSETS = [90, 10, 2];
+// Reminder lead times (minutes before the slot): 24h, 1h, 10m.
+// Adaptive — a lead time is skipped when the booking was made after it passed.
+const OFFSETS = [1440, 60, 10];
 // Salon timezone offset (IST) in minutes — booking_date/booking_time are local.
 const TZ_OFFSET_MIN = 330;
 
-const label = (o: number) => (o === 90 ? "in 1 hour 30 minutes" : `in ${o} minutes`);
+const message = (o: number, salon: string) => {
+  if (o === 1440) return { title: "Appointment tomorrow", body: `Your appointment at ${salon} is tomorrow. See you then!` };
+  if (o === 60) return { title: "Appointment in 1 hour", body: `Your appointment at ${salon} is in 1 hour. Get ready!` };
+  return { title: "Appointment in 10 minutes", body: `You're due at ${salon} in 10 minutes.` };
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -55,13 +60,14 @@ Deno.serve(async (req) => {
       const target = Math.min(...due);
 
       const name = salonName.get(b.barber_id) ?? "your salon";
+      const msg = message(target, name);
       const res = await fetch(`${supabaseUrl}/functions/v1/send-push`, {
         method: "POST",
         headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: b.user_id,
-          title: "Appointment reminder",
-          body: `Your appointment at ${name} is ${label(target)}.`,
+          title: msg.title,
+          body: msg.body,
           url: "/",
           appointmentId: b.id,
           notificationType: "appointment_reminder",
