@@ -15,6 +15,7 @@ import { AdminServicesManager } from '../components/AdminServicesManager';
 import { AdminTimeSlots } from '../components/AdminTimeSlots';
 import { AdminFaqs } from '../components/AdminFaqs';
 import { AdminRatingsToggle } from '../components/AdminRatingsToggle';
+import { AdminQueueToggle } from '../components/AdminQueueToggle';
 import { AdminSettings } from '../components/AdminSettings';
 
 export default function AdminDashboard() {
@@ -111,7 +112,10 @@ export default function AdminDashboard() {
               <AdminSalons />
             </TabsContent>
             <TabsContent value="bookings"><AdminBookings /></TabsContent>
-            <TabsContent value="queue"><AdminQueues /></TabsContent>
+            <TabsContent value="queue" className="space-y-4">
+              <AdminQueueToggle />
+              <AdminQueues />
+            </TabsContent>
             <TabsContent value="services"><AdminServicesManager /></TabsContent>
             <TabsContent value="slots"><AdminTimeSlots /></TabsContent>
             <TabsContent value="faqs"><AdminFaqs /></TabsContent>
