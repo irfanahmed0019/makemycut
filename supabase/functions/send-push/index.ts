@@ -13,6 +13,7 @@ const NOTIFICATION_TYPES = [
   "payment_successful",
   "account_update",
   "promotion",
+  "last_minute",
   "test",
 ] as const;
 
@@ -37,6 +38,7 @@ const PREF_FOR_TYPE: Record<string, "appointment_updates" | "appointment_reminde
   appointment_reminder: "appointment_reminders",
   promotion: "promotions",
   account_update: null,
+  last_minute: null,
   test: null,
 };
 
