@@ -164,10 +164,10 @@ export default function SalonDashboard() {
     const { error } = await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId);
     if (error) { toast({ variant: 'destructive', title: 'Error' }); return; }
     setAllBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, status: 'cancelled' } : b));
-    if (cancelled?.barber_id) {
+    if (cancelled && barber?.id) {
       void supabase.functions.invoke('notify-last-minute', {
         body: {
-          salonId: cancelled.barber_id,
+          salonId: barber.id,
           date: cancelled.booking_date,
           time: String(cancelled.booking_time).slice(0, 5),
         },
