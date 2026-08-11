@@ -186,6 +186,7 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
 
   const handleCancel = async (bookingId: string) => {
     if (!user) return;
+    const target = cancelTarget;
     setCancelling(true);
 
     const { data, error } = await supabase.rpc('cancel_booking', {
@@ -212,6 +213,16 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
       appointmentId: bookingId,
       notificationType: 'appointment_cancelled',
     });
+    // Let opted-in customers with a later slot today know an earlier one opened up.
+    if (target?.barber_id) {
+      void supabase.functions.invoke('notify-last-minute', {
+        body: {
+          salonId: target.barber_id,
+          date: target.booking_date,
+          time: String(target.booking_time).slice(0, 5),
+        },
+      }).catch((e) => console.warn('last-minute alert failed', e));
+    }
     setCancelTarget(null);
     fetchBookings();
   };
