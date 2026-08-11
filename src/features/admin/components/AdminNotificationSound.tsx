@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { setPushSoundUrl } from '@/lib/pushSound';
 
 const SETTING_KEY = 'notification_sound_url';
 const TEN_YEARS = 60 * 60 * 24 * 365 * 10;
@@ -28,6 +29,7 @@ export const AdminNotificationSound = () => {
       .upsert({ key: SETTING_KEY, text_value: value, bool_value: false }, { onConflict: 'key' });
     if (error) { toast({ variant: 'destructive', title: 'Save failed', description: error.message }); return false; }
     setUrl(value);
+    setPushSoundUrl(value);
     toast({ title: value ? 'Notification sound updated' : 'Reverted to the default chime' });
     return true;
   };

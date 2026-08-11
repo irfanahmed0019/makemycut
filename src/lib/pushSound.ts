@@ -68,3 +68,12 @@ export const initPushSound = () => {
     if (e.data?.type === 'MMC_PUSH_SOUND') play();
   });
 };
+
+/** Applies a newly saved admin sound immediately, without a page reload. */
+export const setPushSoundUrl = (url: string | null) => {
+  customUrl = url || null;
+  try {
+    if (customUrl) localStorage.setItem(CACHE_KEY, customUrl);
+    else localStorage.removeItem(CACHE_KEY);
+  } catch { /* ignore */ }
+};
