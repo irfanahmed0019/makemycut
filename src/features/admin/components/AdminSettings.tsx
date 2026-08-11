@@ -114,6 +114,8 @@ export const AdminSettings = () => {
           </div>
         </CardContent>
       </Card>
+
+      <AdminNotificationSound />
     </div>
   );
 };
