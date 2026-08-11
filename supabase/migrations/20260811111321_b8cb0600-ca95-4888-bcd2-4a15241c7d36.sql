@@ -1,0 +1,2 @@
+CREATE POLICY "Admins manage notification sounds" ON storage.objects FOR ALL TO authenticated USING (bucket_id = 'notification-sounds' AND public.has_role(auth.uid(), 'admin')) WITH CHECK (bucket_id = 'notification-sounds' AND public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Anyone can read notification sounds" ON storage.objects FOR SELECT USING (bucket_id = 'notification-sounds');
