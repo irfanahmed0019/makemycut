@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { AdminNotificationSound } from './AdminNotificationSound';
 
 interface AdminRow { user_id: string; email: string; full_name: string | null }
 
