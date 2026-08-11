@@ -3,9 +3,13 @@
  * the service worker reports an incoming push. When the app is closed the OS
  * default notification sound is used — browsers give PWAs no custom-sound API.
  */
-let ctx: AudioContext | null = null;
+import { supabase } from '@/integrations/supabase/client';
 
-const play = () => {
+const CACHE_KEY = 'mmc_notification_sound_url';
+let ctx: AudioContext | null = null;
+let customUrl: string | null = null;
+
+const playChime = () => {
   try {
     const Ctor = window.AudioContext || (window as any).webkitAudioContext;
     if (!Ctor) return;
@@ -30,8 +34,36 @@ const play = () => {
   }
 };
 
+const play = () => {
+  if (customUrl) {
+    try {
+      const audio = new Audio(customUrl);
+      audio.volume = 0.7;
+      void audio.play().catch(() => playChime());
+      return;
+    } catch {
+      /* fall through to the built-in chime */
+    }
+  }
+  playChime();
+};
+
 export const initPushSound = () => {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+
+  // Admin-configured sound: use the cached value instantly, then refresh it.
+  try { customUrl = localStorage.getItem(CACHE_KEY) || null; } catch { /* ignore */ }
+  void (async () => {
+    const { data } = await (supabase as any)
+      .from('app_settings').select('text_value').eq('key', 'notification_sound_url').maybeSingle();
+    customUrl = data?.text_value || null;
+    try {
+      if (customUrl) localStorage.setItem(CACHE_KEY, customUrl);
+      else localStorage.removeItem(CACHE_KEY);
+    } catch { /* ignore */ }
+  })();
+
+  window.addEventListener('mmc-preview-sound', () => playChime());
   navigator.serviceWorker.addEventListener('message', (e: MessageEvent) => {
     if (e.data?.type === 'MMC_PUSH_SOUND') play();
   });
