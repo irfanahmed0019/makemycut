@@ -44,6 +44,7 @@ interface BookingsProps {
 export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
   const [historyBookings, setHistoryBookings] = useState<Booking[]>([]);
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [activeQueue, setActiveQueue] = useState<ActiveQueue | null>(null);
   const [queueList, setQueueList] = useState<QueueListItem[]>([]);
   const [showQueueList, setShowQueueList] = useState(false);
@@ -120,17 +121,23 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
       .order('booking_date', { ascending: true });
 
     if (!error && data) {
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
-      const isActive = (b: Booking) =>
-        (b.status === 'upcoming' || b.status === 'CONFIRMED') && b.booking_date >= todayStr;
-      const upcoming = data.filter(isActive);
-      const history = data.filter((b) => !isActive(b)).reverse();
-      setUpcomingBookings(upcoming);
-      setHistoryBookings(history);
+      setAllBookings(data as Booking[]);
     } else if (error) {
       reportError('database', error.message || 'fetch bookings failed', { user_id: user.id });
     }
   };
+
+  // A booking stays "upcoming" only until its slot time has passed.
+  const slotStart = (b: Booking) => new Date(`${b.booking_date}T${(b.booking_time || '00:00').slice(0, 8)}`);
+  const isExpired = (b: Booking) => slotStart(b).getTime() <= now.getTime();
+
+  // Re-split whenever data or the live clock changes so expiry happens on its own.
+  useEffect(() => {
+    const isActive = (b: Booking) =>
+      (b.status === 'upcoming' || b.status === 'CONFIRMED') && !isExpired(b);
+    setUpcomingBookings(allBookings.filter(isActive));
+    setHistoryBookings(allBookings.filter((b) => !isActive(b)).reverse());
+  }, [allBookings, now]);
 
   const fetchActiveQueue = async () => {
     if (!user) return;
@@ -491,7 +498,9 @@ export const Bookings = ({ onOpenQueueStatus }: BookingsProps) => {
                     booking.status === 'completed' ? 'text-green-400' :
                     booking.status === 'cancelled' ? 'text-destructive' : 'text-muted-foreground'
                   }`}>
-                    {booking.status}
+                    {(booking.status === 'upcoming' || booking.status === 'CONFIRMED') && isExpired(booking)
+                      ? 'Expired'
+                      : booking.status}
                   </span>
                 </div>
               ))}
