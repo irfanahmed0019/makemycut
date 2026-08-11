@@ -6,9 +6,12 @@ export type NotificationType =
   | 'appointment_cancelled'
   | 'appointment_rescheduled'
   | 'appointment_reminder'
+  | 'appointment_starting_soon'
+  | 'check_in_reminder'
   | 'appointment_accepted'
   | 'payment_successful'
   | 'account_update'
+  | 'last_minute'
   | 'promotion';
 
 interface NotifyInput {

@@ -10,9 +10,14 @@ interface Props {
   onOpenChange: (v: boolean) => void;
 }
 
-const ROWS: { key: 'appointment_updates' | 'appointment_reminders' | 'promotions'; label: string; hint: string }[] = [
-  { key: 'appointment_updates', label: 'Appointment updates', hint: 'Booked, confirmed, cancelled or rescheduled' },
-  { key: 'appointment_reminders', label: 'Appointment reminders', hint: 'A nudge before your slot' },
+const ROWS: {
+  key: 'appointment_updates' | 'appointment_reminders' | 'promotions' | 'last_minute_alerts';
+  label: string;
+  hint: string;
+}[] = [
+  { key: 'appointment_updates', label: 'Appointment changes', hint: 'Booked, confirmed, cancelled or rescheduled' },
+  { key: 'appointment_reminders', label: 'Reminders & check-in', hint: 'Before your slot, and when it is time to head over' },
+  { key: 'last_minute_alerts', label: 'Last-minute availability', hint: 'When an earlier slot opens up at your salon' },
   { key: 'promotions', label: 'Offers & promotions', hint: 'Deals from salons near you' },
 ];
 

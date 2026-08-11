@@ -13,12 +13,14 @@ export interface NotificationPrefs {
   appointment_updates: boolean;
   appointment_reminders: boolean;
   promotions: boolean;
+  last_minute_alerts: boolean;
 }
 
 const DEFAULT_PREFS: NotificationPrefs = {
   appointment_updates: true,
   appointment_reminders: true,
   promotions: false,
+  last_minute_alerts: false,
 };
 
 export const usePushNotifications = () => {
@@ -61,7 +63,7 @@ export const usePushNotifications = () => {
     (async () => {
       const { data } = await (supabase as any)
         .from('notification_preferences')
-        .select('appointment_updates, appointment_reminders, promotions')
+        .select('appointment_updates, appointment_reminders, promotions, last_minute_alerts')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) setPrefs(data as NotificationPrefs);
