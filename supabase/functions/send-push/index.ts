@@ -9,6 +9,8 @@ const NOTIFICATION_TYPES = [
   "appointment_cancelled",
   "appointment_rescheduled",
   "appointment_reminder",
+  "appointment_starting_soon",
+  "check_in_reminder",
   "appointment_accepted",
   "payment_successful",
   "account_update",
@@ -28,7 +30,7 @@ const BodySchema = z.object({
 });
 
 // Which preference switch gates each notification type.
-const PREF_FOR_TYPE: Record<string, "appointment_updates" | "appointment_reminders" | "promotions" | null> = {
+const PREF_FOR_TYPE: Record<string, "appointment_updates" | "appointment_reminders" | "promotions" | "last_minute_alerts" | null> = {
   appointment_booked: "appointment_updates",
   appointment_confirmed: "appointment_updates",
   appointment_cancelled: "appointment_updates",
@@ -36,9 +38,11 @@ const PREF_FOR_TYPE: Record<string, "appointment_updates" | "appointment_reminde
   appointment_accepted: "appointment_updates",
   payment_successful: "appointment_updates",
   appointment_reminder: "appointment_reminders",
+  appointment_starting_soon: "appointment_reminders",
+  check_in_reminder: "appointment_reminders",
   promotion: "promotions",
   account_update: null,
-  last_minute: null,
+  last_minute: "last_minute_alerts",
   test: null,
 };
 
