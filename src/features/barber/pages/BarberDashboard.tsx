@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { useQueueEnabled } from '@/hooks/useQueueEnabled';
 
 type FeedItem = {
   id: string;
@@ -70,6 +71,7 @@ export default function BarberDashboard() {
   const { role, chairId, salonId, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queueEnabled = useQueueEnabled();
 
   const cache = readCache();
   const [allQueue, setAllQueue] = useState<any[]>(cache?.allQueue ?? []);
