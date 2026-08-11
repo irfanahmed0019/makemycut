@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { SectionSkeleton } from '@/components/ui/skeleton';
+import { useQueueEnabled } from '@/hooks/useQueueEnabled';
 
 interface OwnerQueueTabProps {
   barberId: string;
@@ -15,6 +16,7 @@ interface OwnerQueueTabProps {
 export const OwnerQueueTab = ({ barberId }: OwnerQueueTabProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queueEnabled = useQueueEnabled();
   const [queue, setQueue] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -72,6 +74,14 @@ export const OwnerQueueTab = ({ barberId }: OwnerQueueTabProps) => {
   };
 
   if (isLoading) return <SectionSkeleton rows={4} />;
+
+  if (!queueEnabled) {
+    return (
+      <p className="text-center text-muted-foreground py-10 text-sm">
+        The walk-in queue has been turned off by the admin.
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-4">
