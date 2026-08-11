@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useRatingsEnabled } from '@/hooks/useRatingsEnabled';
+import { useQueueEnabled } from '@/hooks/useQueueEnabled';
 
 interface SalonDetailProps {
   salon: any;
@@ -33,7 +34,8 @@ export const SalonDetail = ({ salon, onBookAppointment, onJoinQueue, onBack }: S
   }, [salon.id]);
 
   const bookingEnabled = settings?.booking_enabled !== false;
-  const queueEnabled = settings?.queue_enabled !== false;
+  const globalQueueEnabled = useQueueEnabled();
+  const queueEnabled = globalQueueEnabled && settings?.queue_enabled !== false;
 
   return (
     <section className="pt-4">

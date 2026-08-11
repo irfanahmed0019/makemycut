@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { useQueueEnabled } from '@/hooks/useQueueEnabled';
 
 type FeedItem = {
   id: string;
@@ -70,6 +71,7 @@ export default function BarberDashboard() {
   const { role, chairId, salonId, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queueEnabled = useQueueEnabled();
 
   const cache = readCache();
   const [allQueue, setAllQueue] = useState<any[]>(cache?.allQueue ?? []);
@@ -270,7 +272,7 @@ export default function BarberDashboard() {
   const incoming = requests.filter((r) => r.to_barber_id === user?.id);
   const outgoing = requests.filter((r) => r.from_barber_id === user?.id);
 
-  const myQueueItems: FeedItem[] = (allQueue || [])
+  const myQueueItems: FeedItem[] = (queueEnabled ? allQueue || [] : [])
     .filter((q: any) => q.chair_id === chairId)
     .map((q: any) => ({
       id: q.id, kind: 'queue', name: q.customer_name, phone: q.customer_phone,
@@ -299,7 +301,7 @@ export default function BarberDashboard() {
     .sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
   const groupedQ: Record<string, any[]> = {};
-  allQueue.forEach((q) => { const k = q.chair_id || 'unassigned'; (groupedQ[k] ||= []).push(q); });
+  if (queueEnabled) allQueue.forEach((q) => { const k = q.chair_id || 'unassigned'; (groupedQ[k] ||= []).push(q); });
   const groupedB: Record<string, any[]> = {};
   allBookings.forEach((b) => { const k = b.chair_id || 'unassigned'; (groupedB[k] ||= []).push(b); });
 
@@ -349,13 +351,18 @@ export default function BarberDashboard() {
 
         <Tabs defaultValue="mine">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="mine">My Queue ({myFeed.length + (active ? 1 : 0)})</TabsTrigger>
+            <TabsTrigger value="mine">{queueEnabled ? 'My Queue' : 'My List'} ({myFeed.length + (active ? 1 : 0)})</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="all">All Chairs</TabsTrigger>
             <TabsTrigger value="summary">Today</TabsTrigger>
           </TabsList>
 
           <TabsContent value="mine" className="space-y-3 mt-4">
+            {!queueEnabled && (
+              <p className="text-xs text-muted-foreground border border-dashed border-border rounded-lg p-3">
+                Walk-in queue is currently disabled by the admin. Only pre-booked appointments are shown.
+              </p>
+            )}
             {active && (
               <Card className="border-primary/60 bg-card">
                 <CardContent className="p-5 space-y-4">
