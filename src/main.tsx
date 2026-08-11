@@ -5,9 +5,11 @@ import "./index.css";
 import { registerServiceWorker } from "./pwa";
 import { initMonitoring } from "./lib/monitoring";
 import { initInstallPromptCapture } from "./lib/installPrompt";
+import { initPushSound } from "./lib/pushSound";
 
 initMonitoring();
 initInstallPromptCapture();
+initPushSound();
 
 createRoot(document.getElementById("root")!).render(
   <HelmetProvider>
