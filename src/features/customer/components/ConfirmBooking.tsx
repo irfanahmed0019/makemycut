@@ -489,6 +489,13 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
         onClose={() => setShowGateModal(false)}
         onSuccess={handleGateSuccess}
       />
+
+      {/* Phone capture — asked once, at booking time */}
+      <PhoneCaptureGate
+        open={showPhonePrompt}
+        onCancel={() => setShowPhonePrompt(false)}
+        onSaved={() => { setShowPhonePrompt(false); processBooking(); }}
+      />
     </section>
   );
 };
