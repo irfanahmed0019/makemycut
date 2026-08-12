@@ -5,6 +5,7 @@ import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameD
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookingGateModal } from './BookingGateModal';
+import { PhoneCaptureGate } from '@/components/PhoneCaptureGate';
 import { fetchBookedSlots, to24h, fetchSalonTimeSlots, DEFAULT_TIME_SLOTS, isSlotPast } from '../lib/slotAvailability';
 import { reportError } from '@/lib/monitoring';
 import { sendPush } from '@/lib/notify';
@@ -32,6 +33,7 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
   const [selectedTime, setSelectedTime] = useState<string>('10:00 AM');
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [showGateModal, setShowGateModal] = useState(false);
+  const [showPhonePrompt, setShowPhonePrompt] = useState(false);
   const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
   const [chairs, setChairs] = useState<any[]>([]);
   const [selectedChair, setSelectedChair] = useState<string>('');
@@ -152,9 +154,14 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     }
   };
 
-  const handleConfirmClick = () => {
+  const handleConfirmClick = async () => {
     if (!user) {
       setShowGateModal(true);
+      return;
+    }
+    const { data } = await supabase.from('profiles').select('phone').eq('id', user.id).maybeSingle();
+    if (!data?.phone) {
+      setShowPhonePrompt(true);
       return;
     }
     processBooking();
@@ -481,6 +488,13 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
         isOpen={showGateModal}
         onClose={() => setShowGateModal(false)}
         onSuccess={handleGateSuccess}
+      />
+
+      {/* Phone capture — asked once, at booking time */}
+      <PhoneCaptureGate
+        open={showPhonePrompt}
+        onCancel={() => setShowPhonePrompt(false)}
+        onSaved={() => { setShowPhonePrompt(false); processBooking(); }}
       />
     </section>
   );
