@@ -105,7 +105,7 @@ export const enablePushNotifications = async (): Promise<void> => {
     await reg.showNotification('Thanks for allowing notifications ;)', {
       body: "You're all set — we'll keep you posted about your appointments.",
       icon: '/app-icon-192.png',
-      badge: '/app-icon-192.png',
+      badge: '/badge-96.png',
       tag: 'mmc-welcome',
     });
   } catch {
