@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       injectRegister: null,
       devOptions: { enabled: false },
-      includeAssets: ["favicon.ico", "app-icon.png", "app-icon-192.png"],
+      includeAssets: ["app-icon.png", "app-icon-192.png"],
       manifest: {
         id: "/",
         name: "MakeMyCut",
