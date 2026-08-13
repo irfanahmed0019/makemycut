@@ -34,9 +34,11 @@ self.addEventListener("push", (event) => {
   const options = {
     body: data.body || "",
     icon: "/app-icon-192.png",
-    badge: "/app-icon-192.png",
+    badge: "/badge-96.png",
     tag: type ? `mmc-${type}-${data.appointmentId || data.appointment_id || ""}` : undefined,
-    renotify: false,
+    renotify: Boolean(type),
+    silent: false,
+    timestamp: Date.now(),
     // Ignored where unsupported — never breaks delivery.
     vibrate: cfg.vibrate,
     requireInteraction: cfg.requireInteraction,
