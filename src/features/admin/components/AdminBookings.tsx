@@ -22,8 +22,8 @@ export const AdminBookings = () => {
     if (data) {
       // Fetch profiles
       const enriched = await Promise.all(data.map(async (b) => {
-        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', b.user_id).maybeSingle();
-        return { ...b, customer_name: profile?.full_name || 'Customer' };
+        const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('id', b.user_id).maybeSingle();
+        return { ...b, customer_name: profile?.full_name || 'Customer', customer_phone: profile?.phone || null };
       }));
       setBookings(enriched);
     }
@@ -53,6 +53,9 @@ export const AdminBookings = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="font-medium">{b.customer_name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {b.customer_phone ? <a href={`tel:${b.customer_phone}`} className="underline">{b.customer_phone}</a> : 'No phone'}
+                </p>
                 <p className="text-sm text-muted-foreground">{b.barbers?.name} · {b.services?.name}</p>
                 <p className="text-sm text-muted-foreground">{b.booking_date} at {b.booking_time?.slice(0, 5)}</p>
               </div>

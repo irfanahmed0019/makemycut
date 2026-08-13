@@ -248,6 +248,11 @@ export default function SalonDashboard() {
                         </div>
                         <div className="text-sm space-y-1">
                           <p><span className="text-muted-foreground">Customer:</span> {booking.customer_name}</p>
+                          <p><span className="text-muted-foreground">Phone:</span>{' '}
+                            {booking.customer_phone
+                              ? <a href={`tel:${booking.customer_phone}`} className="underline">{booking.customer_phone}</a>
+                              : 'Not provided'}
+                          </p>
                           <p><span className="text-muted-foreground">Service:</span> {booking.services?.name || 'N/A'}</p>
                           <p><span className="text-muted-foreground">Price:</span> ₹{booking.services?.price || 0}</p>
                         </div>
