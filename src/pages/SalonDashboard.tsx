@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardAnalytics } from '@/components/salon/DashboardAnalytics';
-import { OwnerQueueTab } from '@/features/salon/components/OwnerQueueTab';
 import { OwnerSettingsTab } from '@/features/salon/components/OwnerSettingsTab';
 import { SalonQRCodes } from '@/features/salon/components/SalonQRCodes';
 import { WalkInPanel } from '@/features/salon/components/WalkInPanel';
@@ -64,6 +63,7 @@ export default function SalonDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const refreshTimer = useRef<number | null>(null);
+  const [walkInEntries, setWalkInEntries] = useState<Booking[]>([]);
 
   useEffect(() => {
     if (!loading && !user) navigate('/salon-login');
@@ -149,6 +149,38 @@ export default function SalonDashboard() {
     setBookings(allBookings.filter((b) => isSameDay(parseISO(b.booking_date), selectedDate)));
   }, [selectedDate, allBookings]);
 
+  // Walk-in revenue (paid bills) folded into analytics alongside bookings.
+  useEffect(() => {
+    if (!barber) return;
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from('bills')
+        .select('id, total, created_at, payment_status, source')
+        .eq('salon_id', barber.id)
+        .eq('source', 'walk_in')
+        .gte('created_at', windowStart());
+      if (cancelled) return;
+      setWalkInEntries(
+        (data || []).map((b) => ({
+          id: `bill-${b.id}`,
+          user_id: '',
+          booking_date: String(b.created_at).slice(0, 10),
+          booking_time: '00:00',
+          status: b.payment_status === 'paid' ? 'completed' : 'upcoming',
+          payment_status: b.payment_status,
+          services: { name: 'Walk-In', price: Number(b.total) || 0 },
+        }))
+      );
+    };
+    load();
+    const channel = supabase
+      .channel('salon-bills-analytics')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bills', filter: `salon_id=eq.${barber.id}` }, () => load())
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, [barber]);
+
   const todaysEarnings = allBookings
     .filter((b) => isToday(parseISO(b.booking_date)) && b.status === 'completed')
     .reduce((sum, b) => sum + (b.services?.price || 0), 0);
@@ -201,11 +233,10 @@ export default function SalonDashboard() {
 
       <main className="p-4 space-y-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="appointments">Bookings</TabsTrigger>
             <TabsTrigger value="walkins">Walk-Ins</TabsTrigger>
-            <TabsTrigger value="queue">Queue</TabsTrigger>
             <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
@@ -214,7 +245,7 @@ export default function SalonDashboard() {
             {barber && <WalkInPanel salonId={barber.id} salonName={barber.name} showRevenue />}
           </TabsContent>
 
-          <TabsContent value="analytics" className="mt-4"><DashboardAnalytics bookings={allBookings} /></TabsContent>
+          <TabsContent value="analytics" className="mt-4"><DashboardAnalytics bookings={[...allBookings, ...walkInEntries]} /></TabsContent>
 
           <TabsContent value="appointments" className="mt-4 space-y-4">
             <Card className="bg-gradient-to-br from-green-900/50 to-green-800/30 border-green-700/50">
@@ -274,10 +305,6 @@ export default function SalonDashboard() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="queue" className="mt-4">
-            {barber && <OwnerQueueTab barberId={barber.id} />}
           </TabsContent>
 
           <TabsContent value="qrcodes" className="mt-4">
