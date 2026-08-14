@@ -114,7 +114,7 @@ export const DashboardAnalytics = ({ bookings }: DashboardAnalyticsProps) => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-400">₹{analytics.weeklyRevenue.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground mt-1">Completed only · {analytics.weeklyBookings} entries this week (all statuses)</p>
+            <p className="text-xs text-muted-foreground mt-1">{analytics.weeklyBookings} total entries · {analytics.weeklyCompleted} completed</p>
           </CardContent>
         </Card>
 
@@ -124,35 +124,35 @@ export const DashboardAnalytics = ({ bookings }: DashboardAnalyticsProps) => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-blue-400">₹{analytics.monthlyRevenue.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground mt-1">Completed only · {analytics.monthlyBookings} entries this month (all statuses)</p>
+            <p className="text-xs text-muted-foreground mt-1">{analytics.monthlyBookings} total entries · {analytics.monthlyCompleted} completed</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border-purple-700/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-purple-300">Revenue (loaded period)</CardTitle>
+            <CardTitle className="text-sm font-medium text-purple-300">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-purple-400">₹{analytics.totalRevenue.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground mt-1">From {analytics.completedBookings} completed of {analytics.totalBookings} loaded</p>
+            <p className="text-xs text-muted-foreground mt-1">{analytics.completedBookings} completed services</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-yellow-900/50 to-yellow-800/30 border-yellow-700/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-300">Expected Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium text-yellow-300">Upcoming Revenue</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-yellow-400">₹{analytics.pendingRevenue.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground mt-1">Not yet earned · {analytics.upcomingBookings} upcoming</p>
+            <p className="text-xs text-muted-foreground mt-1">{analytics.upcomingBookings} upcoming bookings</p>
           </CardContent>
         </Card>
       </div>
 
       <p className="text-[11px] leading-relaxed text-muted-foreground px-1">
-        Revenue = completed entries only (bookings + paid walk-ins). Counts next to each amount include every status
-        (upcoming, completed, cancelled), so a count can be higher than the number that earned money. All figures cover
-        the period currently loaded into the dashboard, not the salon's lifetime.
+        Revenue amounts reflect completed services only (bookings + paid walk-ins). Entry counts include every status
+        (upcoming, completed, cancelled), so a count can be higher than the number that earned money. Total Revenue
+        covers the period currently loaded into the dashboard, not the salon's lifetime.
       </p>
 
       {/* Source / channel split */}
