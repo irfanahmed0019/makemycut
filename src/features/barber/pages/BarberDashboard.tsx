@@ -108,7 +108,7 @@ export default function BarberDashboard() {
   const fetchAll = async () => {
     if (!salonId) return;
     const today = new Date().toISOString().slice(0, 10);
-    const [{ data: qAll }, { data: cAll }, { data: reqs }, { data: doneBookings }, { data: bDays }] = await Promise.all([
+    const [{ data: qAll }, { data: cAll }, { data: reqs }, { data: doneQueue }, { data: bDays }] = await Promise.all([
       supabase.from('queues')
         .select('*, services:service_id(name), chairs:chair_id(chair_number, name)')
         .eq('salon_id', salonId)
@@ -117,9 +117,9 @@ export default function BarberDashboard() {
       supabase.from('chairs').select('id, chair_number, name').eq('salon_id', salonId).eq('is_active', true).order('chair_number'),
       supabase.from('chair_transfer_requests').select('*').eq('status', 'pending')
         .or(`from_barber_id.eq.${user?.id},to_barber_id.eq.${user?.id}`),
-      supabase.from('bookings').select('id')
-        .eq('barber_id', salonId).eq('booking_date', today)
-        .eq('chair_id', chairId as any).eq('status', 'completed'),
+      supabase.from('queues').select('id, chair_id')
+        .eq('salon_id', salonId).eq('status', 'served')
+        .gte('served_at', `${today}T00:00:00`),
       supabase.from('bookings')
         .select('id, user_id, chair_id, service_id, booking_date, booking_time, status, services:service_id(name, price, duration_minutes)')
         .eq('barber_id', salonId)
@@ -131,6 +131,13 @@ export default function BarberDashboard() {
     const bookings = days.filter(
       (b) => b.booking_date === today && ['upcoming', 'CONFIRMED', 'pending'].includes(b.status),
     );
+    // Completed today = my chair's finished bookings (chairless legacy rows count too) + served walk-ins.
+    const completedBookings = days.filter(
+      (b) => b.booking_date === today && b.status === 'completed' && (!b.chair_id || b.chair_id === chairId),
+    ).length;
+    const completedQueue = ((doneQueue || []) as any[]).filter(
+      (q) => !q.chair_id || q.chair_id === chairId,
+    ).length;
     const userIds = Array.from(new Set(days.map((b) => b.user_id).filter(Boolean)));
     let profileMap: Record<string, any> = {};
     if (userIds.length > 0) {
@@ -145,7 +152,7 @@ export default function BarberDashboard() {
       chairs: cAll || [],
       requests: reqs || [],
       profilesById: profileMap,
-      completedToday: (doneBookings || []).length,
+      completedToday: completedBookings + completedQueue,
     };
     setProfilesById(next.profilesById);
     setAllQueue(next.allQueue);
@@ -242,13 +249,24 @@ export default function BarberDashboard() {
     fetchAll();
   };
 
-  const setBookingStatus = async (bookingId: string, status: 'completed' | 'no-show') => {
-    const { error } = await supabase.from('bookings')
+  const setBookingStatus = async (bookingId: string, status: 'completed' | 'no-show' | 'cancelled') => {
+    const { data, error } = await supabase.from('bookings')
       .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', bookingId);
+      .eq('id', bookingId)
+      .select('id');
     if (error) { toast({ variant: 'destructive', title: 'Update failed', description: error.message }); return; }
+    if (!data || data.length === 0) {
+      toast({ variant: 'destructive', title: 'Not allowed', description: 'This booking is not assigned to your salon.' });
+      return;
+    }
     setDayBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status } : b)));
-    toast({ title: status === 'completed' ? 'Marked as served' : 'Marked as no-show' });
+    toast({
+      title: status === 'completed'
+        ? 'Marked as served'
+        : status === 'no-show'
+        ? 'Cancelled by barber — marked as no-show'
+        : 'Booking cancelled',
+    });
     fetchAll();
   };
 
@@ -399,7 +417,7 @@ export default function BarberDashboard() {
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs text-muted-foreground font-medium tabular-nums">
-                          {item.kind === 'queue' ? String(idx + 1).padStart(2, '0') : 'APPT'}
+                          {String(idx + 1).padStart(2, '0')}.
                         </span>
                         <p className="font-bold text-base">{item.name}</p>
                         {item.badge && (
@@ -491,13 +509,20 @@ export default function BarberDashboard() {
                               : 'border-primary/40 text-primary uppercase text-[10px] tracking-wider'
                           }
                         >
-                          {b.status === 'completed' ? 'Served' : b.status === 'no-show' ? 'No-show' : b.status}
+                          {b.status === 'completed'
+                            ? 'Served'
+                            : b.status === 'no-show'
+                            ? 'Cancelled by barber · No-show'
+                            : b.status === 'cancelled'
+                            ? 'Cancelled'
+                            : b.status}
                         </Badge>
                       </div>
                       {!done && (
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button size="sm" className="flex-1" onClick={() => setBookingStatus(b.id, 'completed')}>Served</Button>
                           <Button size="sm" variant="destructive" className="flex-1" onClick={() => setBookingStatus(b.id, 'no-show')}>No-show</Button>
+                          <Button size="sm" variant="outline" className="flex-1" onClick={() => setBookingStatus(b.id, 'cancelled')}>Cancel</Button>
                         </div>
                       )}
                     </CardContent>
