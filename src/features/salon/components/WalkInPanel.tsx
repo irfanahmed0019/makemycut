@@ -220,7 +220,14 @@ export function WalkInPanel({ salonId, salonName, chairId, showRevenue }: Props)
                   <Button size="sm" onClick={() => startAndBill(w.id)}>Start</Button>
                 )}
                 {w.status === 'in_service' && (
-                  <Button size="sm" onClick={() => (bill ? openReceipt(bill) : startAndBill(w.id))}>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (bill && bill.payment_status === 'unpaid') return openReceipt(bill);
+                      if (bill) return setStatus(w.id, 'completed');
+                      return startAndBill(w.id);
+                    }}
+                  >
                     {bill && bill.payment_status === 'unpaid' ? 'Confirm payment' : 'Complete'}
                   </Button>
                 )}
