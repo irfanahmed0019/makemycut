@@ -509,13 +509,20 @@ export default function BarberDashboard() {
                               : 'border-primary/40 text-primary uppercase text-[10px] tracking-wider'
                           }
                         >
-                          {b.status === 'completed' ? 'Served' : b.status === 'no-show' ? 'No-show' : b.status}
+                          {b.status === 'completed'
+                            ? 'Served'
+                            : b.status === 'no-show'
+                            ? 'Cancelled by barber · No-show'
+                            : b.status === 'cancelled'
+                            ? 'Cancelled'
+                            : b.status}
                         </Badge>
                       </div>
                       {!done && (
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button size="sm" className="flex-1" onClick={() => setBookingStatus(b.id, 'completed')}>Served</Button>
                           <Button size="sm" variant="destructive" className="flex-1" onClick={() => setBookingStatus(b.id, 'no-show')}>No-show</Button>
+                          <Button size="sm" variant="outline" className="flex-1" onClick={() => setBookingStatus(b.id, 'cancelled')}>Cancel</Button>
                         </div>
                       )}
                     </CardContent>
