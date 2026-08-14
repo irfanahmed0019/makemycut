@@ -193,8 +193,23 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
       },
     });
 
-    const data = fnResponse?.booking?.id;
-    const error = fnError || (fnResponse?.error ? { message: fnResponse.error } : null);
+    // `functions.invoke` reports every non-2xx as a generic
+    // "Edge Function returned a non-2xx status code", so read the real reason
+    // (and status) out of the response body before showing anything.
+    let serverError: string | null = fnResponse?.error ?? null;
+    let serverStatus: number | null = null;
+    if (fnError) {
+      const res = (fnError as { context?: Response }).context;
+      serverStatus = res?.status ?? null;
+      try {
+        const parsed = await res?.clone().json();
+        if (parsed?.error) serverError = typeof parsed.error === 'string' ? parsed.error : JSON.stringify(parsed.error);
+      } catch {
+        /* body unavailable — fall back to the generic message */
+      }
+      if (!serverError) serverError = fnError.message || 'Booking failed';
+    }
+    const error = serverError ? { message: serverError } : null;
 
     // Always refresh slot states
     await fetchSlotStates();
@@ -207,11 +222,23 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
         booking_time: time24,
       });
       if (msg.includes('BOOKING_LIMIT') || msg.includes('Maximum 2')) {
-        toast({ variant: 'destructive', title: 'Booking Limit Reached', description: 'Maximum 2 active bookings allowed.' });
+        toast({
+          variant: 'destructive',
+          title: 'Booking Limit Reached',
+          description: 'You already have 2 upcoming bookings. Cancel one to book another salon.',
+        });
       } else if (msg.includes('Rate limit')) {
-        toast({ variant: 'destructive', title: 'Too Many Requests', description: 'Please wait before booking again.' });
-      } else {
+        toast({ variant: 'destructive', title: 'Too Many Requests', description: 'Please wait a little before booking again.' });
+      } else if (serverStatus === 401 || msg.includes('Unauthorized')) {
+        toast({ variant: 'destructive', title: 'Session Expired', description: 'Please sign in again to complete this booking.' });
+      } else if (msg.includes('Service not found')) {
+        toast({ variant: 'destructive', title: 'Service Unavailable', description: 'This service is no longer offered by the salon.' });
+      } else if (msg.includes('past')) {
+        toast({ variant: 'destructive', title: 'Invalid Date', description: 'Cannot book appointments in the past.' });
+      } else if (serverStatus === 409 || msg.includes('Slot unavailable')) {
         toast({ variant: 'destructive', title: 'Slot Unavailable', description: 'Sorry, this time slot has already been booked.' });
+      } else {
+        toast({ variant: 'destructive', title: 'Booking Failed', description: 'Something went wrong. Please try again in a moment.' });
       }
       return;
     }
