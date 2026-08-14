@@ -156,21 +156,27 @@ export default function SalonDashboard() {
     const load = async () => {
       const { data } = await supabase
         .from('bills')
-        .select('id, total, created_at, payment_status, source')
+        .select('id, total, created_at, payment_status, source, customer_name, customer_phone')
         .eq('salon_id', barber.id)
         .eq('source', 'walk_in')
         .gte('created_at', windowStart());
       if (cancelled) return;
       setWalkInEntries(
-        (data || []).map((b) => ({
-          id: `bill-${b.id}`,
-          user_id: '',
-          booking_date: String(b.created_at).slice(0, 10),
-          booking_time: '00:00',
-          status: b.payment_status === 'paid' ? 'completed' : 'upcoming',
-          payment_status: b.payment_status,
-          services: { name: 'Walk-In', price: Number(b.total) || 0 },
-        }))
+        (data || []).map((b) => {
+          const dt = new Date(b.created_at as string);
+          const pad = (n: number) => String(n).padStart(2, '0');
+          return {
+            id: `bill-${b.id}`,
+            user_id: '',
+            booking_date: `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`,
+            booking_time: `${pad(dt.getHours())}:${pad(dt.getMinutes())}`,
+            status: b.payment_status === 'paid' ? 'completed' : 'upcoming',
+            payment_status: b.payment_status,
+            customer_name: (b as { customer_name?: string }).customer_name || 'Walk-in customer',
+            customer_phone: (b as { customer_phone?: string }).customer_phone || undefined,
+            services: { name: 'Walk-In', price: Number(b.total) || 0 },
+          };
+        })
       );
     };
     load();
@@ -218,6 +224,10 @@ export default function SalonDashboard() {
   };
 
   const bookingDates = allBookings.map((b) => parseISO(b.booking_date));
+
+  const dayEntries = combinedEntries
+    .filter((b) => isSameDay(parseISO(b.booking_date), selectedDate))
+    .sort((a, b) => a.booking_time.localeCompare(b.booking_time));
 
   if (loading || isLoading) {
     return <PageSkeleton />;
