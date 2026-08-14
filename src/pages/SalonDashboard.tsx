@@ -14,6 +14,7 @@ import { DashboardAnalytics } from '@/components/salon/DashboardAnalytics';
 import { OwnerQueueTab } from '@/features/salon/components/OwnerQueueTab';
 import { OwnerSettingsTab } from '@/features/salon/components/OwnerSettingsTab';
 import { SalonQRCodes } from '@/features/salon/components/SalonQRCodes';
+import { WalkInPanel } from '@/features/salon/components/WalkInPanel';
 import { cn } from '@/lib/utils';
 
 interface Booking {
@@ -200,13 +201,18 @@ export default function SalonDashboard() {
 
       <main className="p-4 space-y-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="appointments">Bookings</TabsTrigger>
+            <TabsTrigger value="walkins">Walk-Ins</TabsTrigger>
             <TabsTrigger value="queue">Queue</TabsTrigger>
             <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="walkins" className="mt-4">
+            {barber && <WalkInPanel salonId={barber.id} salonName={barber.name} showRevenue />}
+          </TabsContent>
 
           <TabsContent value="analytics" className="mt-4"><DashboardAnalytics bookings={allBookings} /></TabsContent>
 
