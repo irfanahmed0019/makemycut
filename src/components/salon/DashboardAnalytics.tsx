@@ -55,9 +55,12 @@ export const DashboardAnalytics = ({ bookings }: DashboardAnalyticsProps) => {
     const totalRevenue = calculateRevenue(bookings, 'completed');
     const pendingRevenue = calculateRevenue(bookings.filter((b) => b.status === 'upcoming'));
 
+    const weeklyCompleted = weeklyBookings.filter((b) => b.status === 'completed').length;
+    const monthlyCompleted = monthlyBookings.filter((b) => b.status === 'completed').length;
+
     // Calculate completion rate
-    const completionRate = totalBookings > 0 
-      ? Math.round((completedBookings / totalBookings) * 100) 
+    const completionRate = totalBookings > 0
+      ? Math.round((completedBookings / totalBookings) * 100)
       : 0;
 
     // Top services
@@ -94,6 +97,8 @@ export const DashboardAnalytics = ({ bookings }: DashboardAnalyticsProps) => {
       completionRate,
       weeklyBookings: weeklyBookings.length,
       monthlyBookings: monthlyBookings.length,
+      weeklyCompleted,
+      monthlyCompleted,
       topServices,
       sourceSplit,
     };
