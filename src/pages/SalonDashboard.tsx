@@ -246,7 +246,7 @@ export default function SalonDashboard() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="appointments">Bookings &amp; Walk-Ins</TabsTrigger>
+            <TabsTrigger value="appointments">Bookings</TabsTrigger>
             <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
@@ -277,10 +277,10 @@ export default function SalonDashboard() {
             </Card>
 
             <Card>
-              <CardHeader><CardTitle className="text-lg">Appointments &amp; Walk-ins - {format(selectedDate, 'MMMM d, yyyy')}</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">Appointments - {format(selectedDate, 'MMMM d, yyyy')}</CardTitle></CardHeader>
               <CardContent>
                 {dayEntries.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No appointments or walk-ins for this date</p>
+                  <p className="text-muted-foreground text-center py-8">No appointments for this date</p>
                 ) : (
                   <div className="space-y-4">
                     {dayEntries.map((booking, idx) => {
