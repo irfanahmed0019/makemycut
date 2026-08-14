@@ -188,8 +188,8 @@ export default function SalonDashboard() {
   }, [barber]);
 
   const combinedEntries = [...allBookings, ...walkInEntries];
-  const todaysEarnings = combinedEntries
-    .filter((b) => isToday(parseISO(b.booking_date)) && b.status === 'completed')
+  const selectedDateEarnings = combinedEntries
+    .filter((b) => isSameDay(parseISO(b.booking_date), selectedDate) && b.status === 'completed')
     .reduce((sum, b) => sum + (b.services?.price || 0), 0);
 
   const handleMarkCompleted = async (bookingId: string) => {
