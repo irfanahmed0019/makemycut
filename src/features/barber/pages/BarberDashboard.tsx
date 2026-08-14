@@ -417,7 +417,7 @@ export default function BarberDashboard() {
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs text-muted-foreground font-medium tabular-nums">
-                          {item.kind === 'queue' ? String(idx + 1).padStart(2, '0') : 'APPT'}
+                          {String(idx + 1).padStart(2, '0')}.
                         </span>
                         <p className="font-bold text-base">{item.name}</p>
                         {item.badge && (
