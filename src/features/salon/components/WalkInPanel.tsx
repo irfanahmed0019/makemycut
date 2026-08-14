@@ -83,8 +83,10 @@ export function WalkInPanel({ salonId, salonName, chairId, showRevenue }: Props)
     return m;
   }, [bills]);
 
-  const active = walkIns.filter((w) => w.status === 'waiting' || w.status === 'in_service');
-  const done = walkIns.filter((w) => w.status === 'completed');
+  // Newest walk-in first — the customer who just arrived is at the top of the board.
+  const byNewest = (a: WalkIn, b: WalkIn) => (a.created_at < b.created_at ? 1 : -1);
+  const active = walkIns.filter((w) => w.status === 'waiting' || w.status === 'in_service').sort(byNewest);
+  const done = walkIns.filter((w) => w.status === 'completed').sort(byNewest);
   const paidBills = bills.filter((b) => b.payment_status === 'paid');
   const walkInRevenue = paidBills.filter((b) => b.source === 'walk_in').reduce((s, b) => s + Number(b.total), 0);
   const onlineRevenue = paidBills.filter((b) => b.source === 'online').reduce((s, b) => s + Number(b.total), 0);
@@ -133,13 +135,16 @@ export function WalkInPanel({ salonId, salonName, chairId, showRevenue }: Props)
     if (bill) openReceipt(bill as Bill);
   };
 
+  const [paying, setPaying] = useState(false);
   const pay = async (billId: string, method: 'cash' | 'upi' | 'card') => {
+    setPaying(true);
     const { error } = await supabase.rpc('record_payment', { p_bill_id: billId, p_method: method });
+    setPaying(false);
     if (error) { toast({ variant: 'destructive', title: 'Payment failed', description: error.message }); return; }
     toast({ title: 'Payment recorded ✓' });
     const { data: bill } = await supabase.from('bills').select('*').eq('id', billId).maybeSingle();
     await load();
-    if (bill) openReceipt(bill as Bill);
+    if (bill) setReceipt((r) => (r ? { ...r, bill: bill as Bill } : r));
   };
 
   const printReceipt = () => {
@@ -214,9 +219,9 @@ export function WalkInPanel({ salonId, salonName, chairId, showRevenue }: Props)
                 {!bill && w.status !== 'cancelled' && (
                   <Button size="sm" variant="outline" onClick={() => generateBill(w.id)}>Generate bill</Button>
                 )}
-                {bill && bill.payment_status === 'unpaid' && PAYMENT_METHODS.map((m) => (
-                  <Button key={m.key} size="sm" variant="outline" onClick={() => pay(bill.id, m.key)}>{m.label}</Button>
-                ))}
+                {bill && bill.payment_status === 'unpaid' && (
+                  <Button size="sm" onClick={() => openReceipt(bill)}>Collect payment</Button>
+                )}
                 {bill && <Button size="sm" variant="ghost" onClick={() => openReceipt(bill)}>Receipt</Button>}
                 {w.status === 'waiting' && (
                   <Button size="sm" variant="ghost" onClick={() => setStatus(w.id, 'cancelled')}>Cancel</Button>
@@ -278,7 +283,9 @@ export function WalkInPanel({ salonId, salonName, chairId, showRevenue }: Props)
 
       <Dialog open={!!receipt} onOpenChange={(o) => !o && setReceipt(null)}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Receipt</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{receipt?.bill.payment_status === 'paid' ? 'Receipt' : 'Confirm payment'}</DialogTitle>
+          </DialogHeader>
           {receipt && (
             <>
               <div id="mmc-receipt" className="font-mono text-sm space-y-1">
@@ -301,7 +308,18 @@ export function WalkInPanel({ salonId, salonName, chairId, showRevenue }: Props)
                 <p>Status: {receipt.bill.payment_status.toUpperCase()}</p>
                 <p className="text-center">Thank you!</p>
               </div>
-              <Button variant="outline" onClick={printReceipt}>Print / Save</Button>
+              {receipt.bill.payment_status === 'unpaid' ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground text-center">Select payment method to confirm this bill</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {PAYMENT_METHODS.map((m) => (
+                      <Button key={m.key} disabled={paying} onClick={() => pay(receipt.bill.id, m.key)}>{m.label}</Button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <Button variant="outline" onClick={printReceipt}>Print / Save</Button>
+              )}
             </>
           )}
         </DialogContent>
