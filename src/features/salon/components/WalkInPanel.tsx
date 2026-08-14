@@ -135,6 +135,12 @@ export function WalkInPanel({ salonId, salonName, chairId, showRevenue }: Props)
     if (bill) openReceipt(bill as Bill);
   };
 
+  // Start = begin the cut and immediately raise the bill, so the barber only has to pick a payment method.
+  const startAndBill = async (walkInId: string) => {
+    await supabase.rpc('set_walk_in_status', { p_walk_in_id: walkInId, p_status: 'in_service' });
+    await generateBill(walkInId);
+  };
+
   const [paying, setPaying] = useState(false);
   const pay = async (billId: string, method: 'cash' | 'upi' | 'card') => {
     setPaying(true);
@@ -211,10 +217,19 @@ export function WalkInPanel({ salonId, salonName, chairId, showRevenue }: Props)
               </div>
               <div className="flex flex-wrap gap-2">
                 {w.status === 'waiting' && (
-                  <Button size="sm" onClick={() => setStatus(w.id, 'in_service')}>Start</Button>
+                  <Button size="sm" onClick={() => startAndBill(w.id)}>Start</Button>
                 )}
                 {w.status === 'in_service' && (
-                  <Button size="sm" onClick={() => setStatus(w.id, 'completed')}>Complete</Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (bill && bill.payment_status === 'unpaid') return openReceipt(bill);
+                      if (bill) return setStatus(w.id, 'completed');
+                      return startAndBill(w.id);
+                    }}
+                  >
+                    {bill && bill.payment_status === 'unpaid' ? 'Confirm payment' : 'Complete'}
+                  </Button>
                 )}
                 {!bill && w.status !== 'cancelled' && (
                   <Button size="sm" variant="outline" onClick={() => generateBill(w.id)}>Generate bill</Button>
