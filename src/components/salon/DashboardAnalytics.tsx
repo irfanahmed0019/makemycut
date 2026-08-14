@@ -11,6 +11,7 @@ interface Booking {
     name: string;
     price: number;
   } | null;
+  source?: 'online' | 'walk_in';
 }
 
 interface DashboardAnalyticsProps {
@@ -70,6 +71,17 @@ export const DashboardAnalytics = ({ bookings }: DashboardAnalyticsProps) => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3);
 
+    // Source (channel) split — Online vs Walk-in
+    const isWalkIn = (b: Booking) => b.source === 'walk_in';
+    const walkIns = bookings.filter(isWalkIn);
+    const online = bookings.filter((b) => !isWalkIn(b));
+    const sourceSplit = {
+      onlineCount: online.length,
+      onlineRevenue: calculateRevenue(online, 'completed'),
+      walkInCount: walkIns.length,
+      walkInRevenue: calculateRevenue(walkIns, 'completed'),
+    };
+
     return {
       totalBookings,
       completedBookings,
@@ -83,6 +95,7 @@ export const DashboardAnalytics = ({ bookings }: DashboardAnalyticsProps) => {
       weeklyBookings: weeklyBookings.length,
       monthlyBookings: monthlyBookings.length,
       topServices,
+      sourceSplit,
     };
   }, [bookings]);
 
@@ -92,44 +105,67 @@ export const DashboardAnalytics = ({ bookings }: DashboardAnalyticsProps) => {
       <div className="grid grid-cols-2 gap-3">
         <Card className="bg-gradient-to-br from-green-900/50 to-green-800/30 border-green-700/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-green-300">This Week</CardTitle>
+            <CardTitle className="text-sm font-medium text-green-300">This Week (Mon–Sun)</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-400">₹{analytics.weeklyRevenue.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground mt-1">{analytics.weeklyBookings} bookings</p>
+            <p className="text-xs text-muted-foreground mt-1">Completed only · {analytics.weeklyBookings} entries this week (all statuses)</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border-blue-700/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-blue-300">This Month</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-300">This Month (calendar)</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-blue-400">₹{analytics.monthlyRevenue.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground mt-1">{analytics.monthlyBookings} bookings</p>
+            <p className="text-xs text-muted-foreground mt-1">Completed only · {analytics.monthlyBookings} entries this month (all statuses)</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border-purple-700/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-purple-300">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium text-purple-300">Revenue (loaded period)</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-purple-400">₹{analytics.totalRevenue.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground mt-1">{analytics.completedBookings} completed</p>
+            <p className="text-xs text-muted-foreground mt-1">From {analytics.completedBookings} completed of {analytics.totalBookings} loaded</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-yellow-900/50 to-yellow-800/30 border-yellow-700/50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-300">Pending Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium text-yellow-300">Expected Revenue</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-yellow-400">₹{analytics.pendingRevenue.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground mt-1">{analytics.upcomingBookings} upcoming</p>
+            <p className="text-xs text-muted-foreground mt-1">Not yet earned · {analytics.upcomingBookings} upcoming</p>
           </CardContent>
         </Card>
       </div>
+
+      <p className="text-[11px] leading-relaxed text-muted-foreground px-1">
+        Revenue = completed entries only (bookings + paid walk-ins). Counts next to each amount include every status
+        (upcoming, completed, cancelled), so a count can be higher than the number that earned money. All figures cover
+        the period currently loaded into the dashboard, not the salon's lifetime.
+      </p>
+
+      {/* Source / channel split */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">By Source</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-2 text-center">
+          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+            <p className="text-xl font-bold text-primary">₹{analytics.sourceSplit.onlineRevenue.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Online · {analytics.sourceSplit.onlineCount} entries</p>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/40 border border-border">
+            <p className="text-xl font-bold text-foreground">₹{analytics.sourceSplit.walkInRevenue.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Walk-in · {analytics.sourceSplit.walkInCount} entries</p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Overview */}
       <Card>
@@ -151,7 +187,7 @@ export const DashboardAnalytics = ({ bookings }: DashboardAnalyticsProps) => {
             </div>
           </div>
 
-          {/* Booking breakdown */}
+          {/* Status breakdown */}
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
               <p className="text-2xl font-bold text-blue-400">{analytics.upcomingBookings}</p>
@@ -170,7 +206,7 @@ export const DashboardAnalytics = ({ bookings }: DashboardAnalyticsProps) => {
           {/* Top Services */}
           {analytics.topServices.length > 0 && (
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-2">Top Services</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">Top Services (online + walk-in)</p>
               <div className="space-y-2">
                 {analytics.topServices.map(([service, count], index) => (
                   <div key={service} className="flex items-center justify-between">
@@ -180,7 +216,7 @@ export const DashboardAnalytics = ({ bookings }: DashboardAnalyticsProps) => {
                       </span>
                       <span className="text-sm text-foreground">{service}</span>
                     </div>
-                    <span className="text-sm text-muted-foreground">{count} bookings</span>
+                    <span className="text-sm text-muted-foreground">{count} entries</span>
                   </div>
                 ))}
               </div>
