@@ -181,7 +181,8 @@ export default function SalonDashboard() {
     return () => { cancelled = true; supabase.removeChannel(channel); };
   }, [barber]);
 
-  const todaysEarnings = allBookings
+  const combinedEntries = [...allBookings, ...walkInEntries];
+  const todaysEarnings = combinedEntries
     .filter((b) => isToday(parseISO(b.booking_date)) && b.status === 'completed')
     .reduce((sum, b) => sum + (b.services?.price || 0), 0);
 
