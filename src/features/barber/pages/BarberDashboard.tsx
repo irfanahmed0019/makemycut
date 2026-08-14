@@ -111,7 +111,7 @@ export default function BarberDashboard() {
     if (!salonId) return;
     // Local calendar day — using the UTC date made "today" wrong after 5:30 AM IST rollover.
     const today = dateKey(0);
-    const [{ data: qAll }, { data: cAll }, { data: reqs }, { data: doneQueue }, { data: bDays }] = await Promise.all([
+    const [{ data: qAll }, { data: cAll }, { data: reqs }, { data: doneQueue }, { data: bDays }, { data: doneWalkIns }] = await Promise.all([
       supabase.from('queues')
         .select('*, services:service_id(name), chairs:chair_id(chair_number, name)')
         .eq('salon_id', salonId)
@@ -128,6 +128,9 @@ export default function BarberDashboard() {
         .eq('barber_id', salonId)
         .in('booking_date', [dateKey(0), dateKey(1), dateKey(2)])
         .order('booking_time', { ascending: true }),
+      supabase.from('walk_ins').select('id, chair_id')
+        .eq('salon_id', salonId).eq('status', 'completed')
+        .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
     ]);
     const days = ((bDays || []) as any[]);
     // Today's active bookings are a subset of the 3-day fetch — no extra round trip.
@@ -140,6 +143,10 @@ export default function BarberDashboard() {
     ).length;
     const completedQueue = ((doneQueue || []) as any[]).filter(
       (q) => !q.chair_id || q.chair_id === chairId,
+    ).length;
+    // Walk-ins completed at this chair count toward today's total too.
+    const completedWalkIns = ((doneWalkIns || []) as any[]).filter(
+      (w) => !w.chair_id || w.chair_id === chairId,
     ).length;
     const userIds = Array.from(new Set(days.map((b) => b.user_id).filter(Boolean)));
     let profileMap: Record<string, any> = {};
@@ -155,7 +162,7 @@ export default function BarberDashboard() {
       chairs: cAll || [],
       requests: reqs || [],
       profilesById: profileMap,
-      completedToday: completedBookings + completedQueue,
+      completedToday: completedBookings + completedQueue + completedWalkIns,
     };
     setProfilesById(next.profilesById);
     setAllQueue(next.allQueue);
@@ -189,6 +196,8 @@ export default function BarberDashboard() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `barber_id=eq.${salonId}` }, scheduleRefresh)
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'bookings' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chair_transfer_requests' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'walk_ins', filter: `salon_id=eq.${salonId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bills', filter: `salon_id=eq.${salonId}` }, scheduleRefresh)
       .subscribe();
     // Silent safety-net poll so the board never goes stale if a realtime frame is missed.
     const poll = window.setInterval(() => {
@@ -394,7 +403,7 @@ export default function BarberDashboard() {
 
         <Tabs defaultValue="mine">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="mine">{queueEnabled ? 'My Queue' : 'My List'} ({myFeed.length + (active ? 1 : 0)})</TabsTrigger>
+            <TabsTrigger value="mine">{queueEnabled ? 'Queue' : 'My List'}</TabsTrigger>
             <TabsTrigger value="walkin">Walk-In</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="all">All Chairs</TabsTrigger>
@@ -433,7 +442,7 @@ export default function BarberDashboard() {
             )}
 
             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground pt-2">
-              {active ? 'Up Next' : 'My Queue'} ({myFeed.length})
+              {active ? 'Up Next' : 'Queue'} ({myFeed.length})
             </p>
 
             {myFeed.length === 0 && !active && (
