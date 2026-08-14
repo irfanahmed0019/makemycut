@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useQueueEnabled } from '@/hooks/useQueueEnabled';
+import { WalkInPanel } from '@/features/salon/components/WalkInPanel';
 
 type FeedItem = {
   id: string;
@@ -392,12 +393,17 @@ export default function BarberDashboard() {
         )}
 
         <Tabs defaultValue="mine">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="mine">{queueEnabled ? 'My Queue' : 'My List'} ({myFeed.length + (active ? 1 : 0)})</TabsTrigger>
+            <TabsTrigger value="walkin">Walk-In</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="all">All Chairs</TabsTrigger>
             <TabsTrigger value="summary">Today</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="walkin" className="mt-4">
+            {salonId && <WalkInPanel salonId={salonId} chairId={chairId} />}
+          </TabsContent>
 
           <TabsContent value="mine" className="space-y-3 mt-4">
             {!queueEnabled && (
