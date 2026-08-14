@@ -280,7 +280,7 @@ export default function SalonDashboard() {
               <CardHeader><CardTitle className="text-lg">Appointments - {format(selectedDate, 'MMMM d, yyyy')}</CardTitle></CardHeader>
               <CardContent>
                 {dayEntries.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No appointments or walk-ins for this date</p>
+                  <p className="text-muted-foreground text-center py-8">No appointments for this date</p>
                 ) : (
                   <div className="space-y-4">
                     {dayEntries.map((booking, idx) => {
