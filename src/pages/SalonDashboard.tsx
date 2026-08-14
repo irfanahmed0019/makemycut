@@ -3,7 +3,7 @@ import { PageSkeleton } from '@/components/ui/skeleton';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { format, parseISO, isSameDay, isToday } from 'date-fns';
+import { format, parseISO, isSameDay } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -188,8 +188,8 @@ export default function SalonDashboard() {
   }, [barber]);
 
   const combinedEntries = [...allBookings, ...walkInEntries];
-  const todaysEarnings = combinedEntries
-    .filter((b) => isToday(parseISO(b.booking_date)) && b.status === 'completed')
+  const selectedDateEarnings = combinedEntries
+    .filter((b) => isSameDay(parseISO(b.booking_date), selectedDate) && b.status === 'completed')
     .reduce((sum, b) => sum + (b.services?.price || 0), 0);
 
   const handleMarkCompleted = async (bookingId: string) => {
@@ -255,10 +255,10 @@ export default function SalonDashboard() {
 
           <TabsContent value="appointments" className="mt-4 space-y-4">
             <Card className="bg-gradient-to-br from-green-900/50 to-green-800/30 border-green-700/50">
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-green-300">Today's Earnings</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-green-300">{format(selectedDate, 'MMM d')} Earnings</CardTitle></CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-green-400">₹{todaysEarnings.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground mt-1">{combinedEntries.filter((b) => isToday(parseISO(b.booking_date)) && b.status === 'completed').length} completed today</p>
+                <p className="text-3xl font-bold text-green-400">₹{selectedDateEarnings.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">{combinedEntries.filter((b) => isSameDay(parseISO(b.booking_date), selectedDate) && b.status === 'completed').length} completed on {format(selectedDate, 'MMM d')}</p>
               </CardContent>
             </Card>
 
