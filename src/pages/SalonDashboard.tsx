@@ -26,6 +26,7 @@ interface Booking {
   customer_name?: string;
   customer_phone?: string;
   services: { name: string; price: number } | null;
+  source?: 'online' | 'walk_in';
 }
 
 interface Barber {
@@ -156,7 +157,7 @@ export default function SalonDashboard() {
     const load = async () => {
       const { data } = await supabase
         .from('bills')
-        .select('id, total, created_at, payment_status, source, customer_name, customer_phone')
+        .select('id, total, created_at, payment_status, source, customer_name, customer_phone, bill_items(name)')
         .eq('salon_id', barber.id)
         .eq('source', 'walk_in')
         .gte('created_at', windowStart());
@@ -165,6 +166,7 @@ export default function SalonDashboard() {
         (data || []).map((b) => {
           const dt = new Date(b.created_at as string);
           const pad = (n: number) => String(n).padStart(2, '0');
+          const items = ((b as { bill_items?: { name: string }[] }).bill_items || []).map((i) => i.name).filter(Boolean);
           return {
             id: `bill-${b.id}`,
             user_id: '',
@@ -174,7 +176,8 @@ export default function SalonDashboard() {
             payment_status: b.payment_status,
             customer_name: (b as { customer_name?: string }).customer_name || 'Walk-in customer',
             customer_phone: (b as { customer_phone?: string }).customer_phone || undefined,
-            services: { name: 'Walk-In', price: Number(b.total) || 0 },
+            services: { name: items.length ? items.join(' + ') : 'Service', price: Number(b.total) || 0 },
+            source: 'walk_in' as const,
           };
         })
       );
