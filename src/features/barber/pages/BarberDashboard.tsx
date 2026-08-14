@@ -108,7 +108,7 @@ export default function BarberDashboard() {
   const fetchAll = async () => {
     if (!salonId) return;
     const today = new Date().toISOString().slice(0, 10);
-    const [{ data: qAll }, { data: cAll }, { data: reqs }, { data: doneBookings }, { data: bDays }] = await Promise.all([
+    const [{ data: qAll }, { data: cAll }, { data: reqs }, { data: doneQueue }, { data: bDays }] = await Promise.all([
       supabase.from('queues')
         .select('*, services:service_id(name), chairs:chair_id(chair_number, name)')
         .eq('salon_id', salonId)
@@ -117,9 +117,9 @@ export default function BarberDashboard() {
       supabase.from('chairs').select('id, chair_number, name').eq('salon_id', salonId).eq('is_active', true).order('chair_number'),
       supabase.from('chair_transfer_requests').select('*').eq('status', 'pending')
         .or(`from_barber_id.eq.${user?.id},to_barber_id.eq.${user?.id}`),
-      supabase.from('bookings').select('id')
-        .eq('barber_id', salonId).eq('booking_date', today)
-        .eq('chair_id', chairId as any).eq('status', 'completed'),
+      supabase.from('queues').select('id, chair_id')
+        .eq('salon_id', salonId).eq('status', 'served')
+        .gte('served_at', `${today}T00:00:00`),
       supabase.from('bookings')
         .select('id, user_id, chair_id, service_id, booking_date, booking_time, status, services:service_id(name, price, duration_minutes)')
         .eq('barber_id', salonId)
@@ -131,6 +131,13 @@ export default function BarberDashboard() {
     const bookings = days.filter(
       (b) => b.booking_date === today && ['upcoming', 'CONFIRMED', 'pending'].includes(b.status),
     );
+    // Completed today = my chair's finished bookings (chairless legacy rows count too) + served walk-ins.
+    const completedBookings = days.filter(
+      (b) => b.booking_date === today && b.status === 'completed' && (!b.chair_id || b.chair_id === chairId),
+    ).length;
+    const completedQueue = ((doneQueue || []) as any[]).filter(
+      (q) => !q.chair_id || q.chair_id === chairId,
+    ).length;
     const userIds = Array.from(new Set(days.map((b) => b.user_id).filter(Boolean)));
     let profileMap: Record<string, any> = {};
     if (userIds.length > 0) {
@@ -145,7 +152,7 @@ export default function BarberDashboard() {
       chairs: cAll || [],
       requests: reqs || [],
       profilesById: profileMap,
-      completedToday: (doneBookings || []).length,
+      completedToday: completedBookings + completedQueue,
     };
     setProfilesById(next.profilesById);
     setAllQueue(next.allQueue);
