@@ -255,10 +255,10 @@ export default function SalonDashboard() {
 
           <TabsContent value="appointments" className="mt-4 space-y-4">
             <Card className="bg-gradient-to-br from-green-900/50 to-green-800/30 border-green-700/50">
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-green-300">Today's Earnings</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-green-300">{format(selectedDate, 'MMM d')} Earnings</CardTitle></CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-green-400">₹{todaysEarnings.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground mt-1">{combinedEntries.filter((b) => isToday(parseISO(b.booking_date)) && b.status === 'completed').length} completed today</p>
+                <p className="text-3xl font-bold text-green-400">₹{selectedDateEarnings.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">{combinedEntries.filter((b) => isSameDay(parseISO(b.booking_date), selectedDate) && b.status === 'completed').length} completed on {format(selectedDate, 'MMM d')}</p>
               </CardContent>
             </Card>
 
