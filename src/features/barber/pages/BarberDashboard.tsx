@@ -196,6 +196,8 @@ export default function BarberDashboard() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `barber_id=eq.${salonId}` }, scheduleRefresh)
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'bookings' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chair_transfer_requests' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'walk_ins', filter: `salon_id=eq.${salonId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bills', filter: `salon_id=eq.${salonId}` }, scheduleRefresh)
       .subscribe();
     // Silent safety-net poll so the board never goes stale if a realtime frame is missed.
     const poll = window.setInterval(() => {
@@ -401,7 +403,7 @@ export default function BarberDashboard() {
 
         <Tabs defaultValue="mine">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="mine">{queueEnabled ? 'My Queue' : 'My List'} ({myFeed.length + (active ? 1 : 0)})</TabsTrigger>
+            <TabsTrigger value="mine">{queueEnabled ? 'Queue' : 'My List'}</TabsTrigger>
             <TabsTrigger value="walkin">Walk-In</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="all">All Chairs</TabsTrigger>
@@ -440,7 +442,7 @@ export default function BarberDashboard() {
             )}
 
             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground pt-2">
-              {active ? 'Up Next' : 'My Queue'} ({myFeed.length})
+              {active ? 'Up Next' : 'Queue'} ({myFeed.length})
             </p>
 
             {myFeed.length === 0 && !active && (
