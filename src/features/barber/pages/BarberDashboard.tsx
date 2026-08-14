@@ -107,7 +107,8 @@ export default function BarberDashboard() {
 
   const fetchAll = async () => {
     if (!salonId) return;
-    const today = new Date().toISOString().slice(0, 10);
+    // Local calendar day — using the UTC date made "today" wrong after 5:30 AM IST rollover.
+    const today = dateKey(0);
     const [{ data: qAll }, { data: cAll }, { data: reqs }, { data: doneQueue }, { data: bDays }] = await Promise.all([
       supabase.from('queues')
         .select('*, services:service_id(name), chairs:chair_id(chair_number, name)')
@@ -119,7 +120,7 @@ export default function BarberDashboard() {
         .or(`from_barber_id.eq.${user?.id},to_barber_id.eq.${user?.id}`),
       supabase.from('queues').select('id, chair_id')
         .eq('salon_id', salonId).eq('status', 'served')
-        .gte('served_at', `${today}T00:00:00`),
+        .gte('served_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
       supabase.from('bookings')
         .select('id, user_id, chair_id, service_id, booking_date, booking_time, status, services:service_id(name, price, duration_minutes)')
         .eq('barber_id', salonId)
