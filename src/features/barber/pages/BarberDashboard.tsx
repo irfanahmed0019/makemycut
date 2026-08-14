@@ -249,13 +249,24 @@ export default function BarberDashboard() {
     fetchAll();
   };
 
-  const setBookingStatus = async (bookingId: string, status: 'completed' | 'no-show') => {
-    const { error } = await supabase.from('bookings')
+  const setBookingStatus = async (bookingId: string, status: 'completed' | 'no-show' | 'cancelled') => {
+    const { data, error } = await supabase.from('bookings')
       .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', bookingId);
+      .eq('id', bookingId)
+      .select('id');
     if (error) { toast({ variant: 'destructive', title: 'Update failed', description: error.message }); return; }
+    if (!data || data.length === 0) {
+      toast({ variant: 'destructive', title: 'Not allowed', description: 'This booking is not assigned to your salon.' });
+      return;
+    }
     setDayBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status } : b)));
-    toast({ title: status === 'completed' ? 'Marked as served' : 'Marked as no-show' });
+    toast({
+      title: status === 'completed'
+        ? 'Marked as served'
+        : status === 'no-show'
+        ? 'Cancelled by barber — marked as no-show'
+        : 'Booking cancelled',
+    });
     fetchAll();
   };
 
