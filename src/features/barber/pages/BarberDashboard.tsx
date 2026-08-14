@@ -89,6 +89,7 @@ export default function BarberDashboard() {
   });
   const [nowMs, setNowMs] = useState<number>(Date.now());
   const refreshTimer = useRef<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/salon-login');
@@ -177,15 +178,34 @@ export default function BarberDashboard() {
     const channel = supabase
       .channel(`barber-${salonId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'queues', filter: `salon_id=eq.${salonId}` }, scheduleRefresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `barber_id=eq.${salonId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings', filter: `barber_id=eq.${salonId}` }, (payload: any) => {
+        const d = payload?.new?.booking_date;
+        if (d && [dateKey(0), dateKey(1), dateKey(2)].includes(d)) {
+          toast({ title: 'New booking', description: 'A new appointment just came in.' });
+        }
+        scheduleRefresh();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `barber_id=eq.${salonId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'bookings' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chair_transfer_requests' }, scheduleRefresh)
       .subscribe();
+    // Silent safety-net poll so the board never goes stale if a realtime frame is missed.
+    const poll = window.setInterval(() => {
+      if (document.visibilityState === 'visible') fetchAll();
+    }, 30000);
     return () => {
       if (refreshTimer.current) window.clearTimeout(refreshTimer.current);
+      window.clearInterval(poll);
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, salonId, chairId]);
+
+  const manualRefresh = async () => {
+    setRefreshing(true);
+    await fetchAll();
+    setRefreshing(false);
+  };
 
   const handleTransfer = async (item: FeedItem, toChairId: string) => {
     const { error } = await supabase.rpc('request_chair_transfer', {
@@ -340,6 +360,9 @@ export default function BarberDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={manualRefresh} disabled={refreshing}>
+            {refreshing ? 'Refreshing…' : 'Refresh'}
+          </Button>
           <Badge variant="outline" className="border-primary/40 text-primary uppercase tracking-wider">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary mr-2" />
             {myChair ? `Chair ${myChair.chair_number}` : 'Unassigned'}
