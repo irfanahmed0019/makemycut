@@ -10,7 +10,7 @@ export const useQueueEnabled = () => {
 
   useEffect(() => {
     let active = true;
-    supabase
+    const load = () => supabase
       .from('app_settings')
       .select('bool_value')
       .eq('key', KEY)
@@ -22,7 +22,17 @@ export const useQueueEnabled = () => {
         cached = value;
         setEnabled(value);
       });
-    return () => { active = false; };
+    load();
+    // Admin flips the switch -> every dashboard reacts immediately.
+    const channel = supabase
+      .channel('app-settings-queue-enabled')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_settings', filter: `key=eq.${KEY}` },
+        () => load(),
+      )
+      .subscribe();
+    return () => { active = false; supabase.removeChannel(channel); };
   }, []);
 
   return enabled;
