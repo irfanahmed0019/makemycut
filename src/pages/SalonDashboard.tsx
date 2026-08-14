@@ -181,7 +181,8 @@ export default function SalonDashboard() {
     return () => { cancelled = true; supabase.removeChannel(channel); };
   }, [barber]);
 
-  const todaysEarnings = allBookings
+  const combinedEntries = [...allBookings, ...walkInEntries];
+  const todaysEarnings = combinedEntries
     .filter((b) => isToday(parseISO(b.booking_date)) && b.status === 'completed')
     .reduce((sum, b) => sum + (b.services?.price || 0), 0);
 
@@ -252,7 +253,7 @@ export default function SalonDashboard() {
               <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-green-300">Today's Earnings</CardTitle></CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold text-green-400">₹{todaysEarnings.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground mt-1">{allBookings.filter((b) => isToday(parseISO(b.booking_date)) && b.status === 'completed').length} completed today</p>
+                <p className="text-xs text-muted-foreground mt-1">{combinedEntries.filter((b) => isToday(parseISO(b.booking_date)) && b.status === 'completed').length} completed today</p>
               </CardContent>
             </Card>
 
