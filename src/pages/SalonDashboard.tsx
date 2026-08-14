@@ -156,21 +156,27 @@ export default function SalonDashboard() {
     const load = async () => {
       const { data } = await supabase
         .from('bills')
-        .select('id, total, created_at, payment_status, source')
+        .select('id, total, created_at, payment_status, source, customer_name, customer_phone')
         .eq('salon_id', barber.id)
         .eq('source', 'walk_in')
         .gte('created_at', windowStart());
       if (cancelled) return;
       setWalkInEntries(
-        (data || []).map((b) => ({
-          id: `bill-${b.id}`,
-          user_id: '',
-          booking_date: String(b.created_at).slice(0, 10),
-          booking_time: '00:00',
-          status: b.payment_status === 'paid' ? 'completed' : 'upcoming',
-          payment_status: b.payment_status,
-          services: { name: 'Walk-In', price: Number(b.total) || 0 },
-        }))
+        (data || []).map((b) => {
+          const dt = new Date(b.created_at as string);
+          const pad = (n: number) => String(n).padStart(2, '0');
+          return {
+            id: `bill-${b.id}`,
+            user_id: '',
+            booking_date: `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`,
+            booking_time: `${pad(dt.getHours())}:${pad(dt.getMinutes())}`,
+            status: b.payment_status === 'paid' ? 'completed' : 'upcoming',
+            payment_status: b.payment_status,
+            customer_name: (b as { customer_name?: string }).customer_name || 'Walk-in customer',
+            customer_phone: (b as { customer_phone?: string }).customer_phone || undefined,
+            services: { name: 'Walk-In', price: Number(b.total) || 0 },
+          };
+        })
       );
     };
     load();
@@ -219,6 +225,10 @@ export default function SalonDashboard() {
 
   const bookingDates = allBookings.map((b) => parseISO(b.booking_date));
 
+  const dayEntries = combinedEntries
+    .filter((b) => isSameDay(parseISO(b.booking_date), selectedDate))
+    .sort((a, b) => a.booking_time.localeCompare(b.booking_time));
+
   if (loading || isLoading) {
     return <PageSkeleton />;
   }
@@ -234,17 +244,12 @@ export default function SalonDashboard() {
 
       <main className="p-4 space-y-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="appointments">Bookings</TabsTrigger>
-            <TabsTrigger value="walkins">Walk-Ins</TabsTrigger>
+            <TabsTrigger value="appointments">Bookings &amp; Walk-Ins</TabsTrigger>
             <TabsTrigger value="qrcodes">QR Codes</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="walkins" className="mt-4">
-            {barber && <WalkInPanel salonId={barber.id} salonName={barber.name} showRevenue />}
-          </TabsContent>
 
           <TabsContent value="analytics" className="mt-4"><DashboardAnalytics bookings={[...allBookings, ...walkInEntries]} /></TabsContent>
 
@@ -272,17 +277,22 @@ export default function SalonDashboard() {
             </Card>
 
             <Card>
-              <CardHeader><CardTitle className="text-lg">Appointments - {format(selectedDate, 'MMMM d, yyyy')}</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">Appointments &amp; Walk-ins - {format(selectedDate, 'MMMM d, yyyy')}</CardTitle></CardHeader>
               <CardContent>
-                {bookings.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No appointments for this date</p>
+                {dayEntries.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No appointments or walk-ins for this date</p>
                 ) : (
                   <div className="space-y-4">
-                    {bookings.map((booking) => (
+                    {dayEntries.map((booking, idx) => {
+                      const isWalkIn = booking.id.startsWith('bill-');
+                      return (
                       <div key={booking.id} className="border border-border rounded-lg p-4 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="font-medium">{booking.booking_time.slice(0, 5)}</span>
-                          <Badge className={getStatusColor(booking.status)}>{getStatusLabel(booking.status)}</Badge>
+                          <span className="font-medium">{idx + 1}. {booking.booking_time.slice(0, 5)}</span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">{isWalkIn ? 'Walk-in' : 'Booking'}</Badge>
+                            <Badge className={getStatusColor(booking.status)}>{getStatusLabel(booking.status)}</Badge>
+                          </div>
                         </div>
                         <div className="text-sm space-y-1">
                           <p><span className="text-muted-foreground">Customer:</span> {booking.customer_name}</p>
@@ -294,18 +304,20 @@ export default function SalonDashboard() {
                           <p><span className="text-muted-foreground">Service:</span> {booking.services?.name || 'N/A'}</p>
                           <p><span className="text-muted-foreground">Price:</span> ₹{booking.services?.price || 0}</p>
                         </div>
-                        {booking.status === 'upcoming' && (
+                        {!isWalkIn && booking.status === 'upcoming' && (
                           <div className="flex gap-2 mt-2">
                             <Button variant="default" size="sm" className="flex-1" onClick={() => handleMarkCompleted(booking.id)}>Mark as Completed</Button>
                             <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleCancelBooking(booking.id)}>Cancel</Button>
                           </div>
                         )}
                       </div>
-                    ))}
+                    );})}
                   </div>
                 )}
               </CardContent>
             </Card>
+
+            {barber && <WalkInPanel salonId={barber.id} salonName={barber.name} showRevenue />}
           </TabsContent>
 
           <TabsContent value="qrcodes" className="mt-4">
