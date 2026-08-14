@@ -128,6 +128,136 @@ export type Database = {
         }
         Relationships: []
       }
+      bill_items: {
+        Row: {
+          bill_id: string
+          created_at: string
+          id: string
+          name: string
+          price: number
+          quantity: number
+          service_id: string | null
+        }
+        Insert: {
+          bill_id: string
+          created_at?: string
+          id?: string
+          name: string
+          price: number
+          quantity?: number
+          service_id?: string | null
+        }
+        Update: {
+          bill_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          price?: number
+          quantity?: number
+          service_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_items_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bill_items_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bills: {
+        Row: {
+          barber_id: string | null
+          bill_number: string
+          booking_id: string | null
+          created_at: string
+          customer_name: string | null
+          customer_phone: string | null
+          customer_user_id: string | null
+          discount: number
+          id: string
+          paid_at: string | null
+          payment_method: string | null
+          payment_status: string
+          salon_id: string
+          source: string
+          subtotal: number
+          total: number
+          updated_at: string
+          walk_in_id: string | null
+        }
+        Insert: {
+          barber_id?: string | null
+          bill_number: string
+          booking_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          customer_user_id?: string | null
+          discount?: number
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          salon_id: string
+          source: string
+          subtotal: number
+          total: number
+          updated_at?: string
+          walk_in_id?: string | null
+        }
+        Update: {
+          barber_id?: string | null
+          bill_number?: string
+          booking_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          customer_user_id?: string | null
+          discount?: number
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          salon_id?: string
+          source?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          walk_in_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bills_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bills_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bills_walk_in_id_fkey"
+            columns: ["walk_in_id"]
+            isOneToOne: true
+            referencedRelation: "walk_ins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_reminders: {
         Row: {
           booking_id: string
@@ -729,6 +859,60 @@ export type Database = {
         }
         Relationships: []
       }
+      walk_ins: {
+        Row: {
+          barber_id: string | null
+          chair_id: string | null
+          created_at: string
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          salon_id: string
+          service_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          barber_id?: string | null
+          chair_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          salon_id: string
+          service_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          barber_id?: string | null
+          chair_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          salon_id?: string
+          service_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "walk_ins_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "walk_ins_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       queue_public: {
@@ -835,6 +1019,17 @@ export type Database = {
         Returns: boolean
       }
       count_active_bookings: { Args: { p_user_id: string }; Returns: number }
+      create_walk_in: {
+        Args: {
+          p_barber_id?: string
+          p_chair_id?: string
+          p_customer_name?: string
+          p_customer_phone?: string
+          p_salon_id: string
+          p_service_id: string
+        }
+        Returns: string
+      }
       current_barber_chair: { Args: { _user_id: string }; Returns: string }
       current_barber_salon: { Args: { _user_id: string }; Returns: string }
       decrement_trust_on_cancel: {
@@ -846,6 +1041,15 @@ export type Database = {
         Returns: undefined
       }
       expire_stale_queue_entries: { Args: never; Returns: undefined }
+      generate_bill: {
+        Args: {
+          p_booking_id?: string
+          p_discount?: number
+          p_service_ids?: string[]
+          p_walk_in_id?: string
+        }
+        Returns: string
+      }
       get_next_queue_position: { Args: { p_salon_id: string }; Returns: number }
       get_occupied_slots: {
         Args: {
@@ -885,6 +1089,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_salon_staff: {
+        Args: { _salon_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_slot_occupied: {
         Args: {
           p_barber_id: string
@@ -920,6 +1128,14 @@ export type Database = {
         Returns: {
           area: string
           district: string
+        }[]
+      }
+      lookup_customer_history: {
+        Args: { p_phone: string; p_salon_id: string }
+        Returns: {
+          last_visit: string
+          name: string
+          visits: number
         }[]
       }
       mark_queue_served: {
@@ -959,6 +1175,10 @@ export type Database = {
             }
             Returns: string
           }
+      record_payment: {
+        Args: { p_bill_id: string; p_method: string }
+        Returns: boolean
+      }
       request_chair_transfer: {
         Args: {
           p_booking_id: string
@@ -979,6 +1199,10 @@ export type Database = {
         }[]
       }
       set_my_phone: { Args: { p_phone: string }; Returns: string }
+      set_walk_in_status: {
+        Args: { p_status: string; p_walk_in_id: string }
+        Returns: boolean
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }

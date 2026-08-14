@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useQueueEnabled } from '@/hooks/useQueueEnabled';
+import { WalkInPanel } from '@/features/salon/components/WalkInPanel';
 
 type FeedItem = {
   id: string;
@@ -89,6 +90,7 @@ export default function BarberDashboard() {
   });
   const [nowMs, setNowMs] = useState<number>(Date.now());
   const refreshTimer = useRef<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/salon-login');
@@ -107,7 +109,8 @@ export default function BarberDashboard() {
 
   const fetchAll = async () => {
     if (!salonId) return;
-    const today = new Date().toISOString().slice(0, 10);
+    // Local calendar day — using the UTC date made "today" wrong after 5:30 AM IST rollover.
+    const today = dateKey(0);
     const [{ data: qAll }, { data: cAll }, { data: reqs }, { data: doneQueue }, { data: bDays }] = await Promise.all([
       supabase.from('queues')
         .select('*, services:service_id(name), chairs:chair_id(chair_number, name)')
@@ -119,7 +122,7 @@ export default function BarberDashboard() {
         .or(`from_barber_id.eq.${user?.id},to_barber_id.eq.${user?.id}`),
       supabase.from('queues').select('id, chair_id')
         .eq('salon_id', salonId).eq('status', 'served')
-        .gte('served_at', `${today}T00:00:00`),
+        .gte('served_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
       supabase.from('bookings')
         .select('id, user_id, chair_id, service_id, booking_date, booking_time, status, services:service_id(name, price, duration_minutes)')
         .eq('barber_id', salonId)
@@ -176,15 +179,34 @@ export default function BarberDashboard() {
     const channel = supabase
       .channel(`barber-${salonId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'queues', filter: `salon_id=eq.${salonId}` }, scheduleRefresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `barber_id=eq.${salonId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings', filter: `barber_id=eq.${salonId}` }, (payload: any) => {
+        const d = payload?.new?.booking_date;
+        if (d && [dateKey(0), dateKey(1), dateKey(2)].includes(d)) {
+          toast({ title: 'New booking', description: 'A new appointment just came in.' });
+        }
+        scheduleRefresh();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `barber_id=eq.${salonId}` }, scheduleRefresh)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'bookings' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chair_transfer_requests' }, scheduleRefresh)
       .subscribe();
+    // Silent safety-net poll so the board never goes stale if a realtime frame is missed.
+    const poll = window.setInterval(() => {
+      if (document.visibilityState === 'visible') fetchAll();
+    }, 30000);
     return () => {
       if (refreshTimer.current) window.clearTimeout(refreshTimer.current);
+      window.clearInterval(poll);
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, salonId, chairId]);
+
+  const manualRefresh = async () => {
+    setRefreshing(true);
+    await fetchAll();
+    setRefreshing(false);
+  };
 
   const handleTransfer = async (item: FeedItem, toChairId: string) => {
     const { error } = await supabase.rpc('request_chair_transfer', {
@@ -339,6 +361,9 @@ export default function BarberDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={manualRefresh} disabled={refreshing}>
+            {refreshing ? 'Refreshing…' : 'Refresh'}
+          </Button>
           <Badge variant="outline" className="border-primary/40 text-primary uppercase tracking-wider">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary mr-2" />
             {myChair ? `Chair ${myChair.chair_number}` : 'Unassigned'}
@@ -368,12 +393,17 @@ export default function BarberDashboard() {
         )}
 
         <Tabs defaultValue="mine">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="mine">{queueEnabled ? 'My Queue' : 'My List'} ({myFeed.length + (active ? 1 : 0)})</TabsTrigger>
+            <TabsTrigger value="walkin">Walk-In</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="all">All Chairs</TabsTrigger>
             <TabsTrigger value="summary">Today</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="walkin" className="mt-4">
+            {salonId && <WalkInPanel salonId={salonId} chairId={chairId} />}
+          </TabsContent>
 
           <TabsContent value="mine" className="space-y-3 mt-4">
             {!queueEnabled && (
