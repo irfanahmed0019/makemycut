@@ -54,19 +54,6 @@ export const ConfirmBooking = ({ barber, onBack, onConfirm }: ConfirmBookingProp
     })();
   }, [user?.id]);
 
-  // Load the saved "last-minute alerts" preference for this user
-  useEffect(() => {
-    if (!user?.id) return;
-    supabase
-      .from('notification_preferences')
-      .select('last_minute_alerts')
-      .eq('user_id', user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setLastMinuteAlerts(!!data.last_minute_alerts);
-      });
-  }, [user?.id]);
-
   // Live clock so past slots grey out on their own, without a refresh.
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000);
