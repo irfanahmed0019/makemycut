@@ -2,6 +2,12 @@
 
 MakeMyCut is a modern salon booking platform focused on reducing waiting time and improving the appointment experience for both customers and salon owners. The platform allows users to discover salons, schedule appointments instantly, and verify bookings through a streamlined QR-based workflow.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/makemycut-desktop.png" alt="MakeMyCut on desktop" width="80%">
+</p>
+
 ## Live Platforms
 
 ### Official Website
